@@ -9,10 +9,10 @@ app.use(express.json());
 
 
 const pool = new Pool({
-  user: 'baza_s0r0_user',           // Twój login do bazy
-  host: 'dpg-d73f6gvdiees73eronl0-a.frankfurt-postgres.render.com',    // np. db.postgres.render.com
+  user: 'baza_s0r0_user',          
+  host: 'dpg-d73f6gvdiees73eronl0-a.frankfurt-postgres.render.com',   
   database: 'baza_s0r0',
-  password: '8agqccLgW2HYWy4qfcvwM1sx25bDvNRR',     // uwaga, jawne hasło
+  password: '8agqccLgW2HYWy4qfcvwM1sx25bDvNRR',    
   port: 5432,
   ssl: {
     rejectUnauthorized: false
