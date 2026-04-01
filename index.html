@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Test API - Użytkownicy</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Lista użytkowników</h1>
+<button onclick="pobierzUzytkownikow()">Pobierz dane</button>
+
+<table id="tabela">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Imię</th>
+      <th>Nazwisko</th>
+      <th>Email</th>
+      <th>Rola</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const API_URL = "https://masi-3c4j.onrender.com/uzytkownicy"; // ← ZMIEŃ TO
+
+async function pobierzUzytkownikow() {
+  try {
+    const res = await fetch(API_URL);
+    const dane = await res.json();
+
+    const tbody = document.querySelector("#tabela tbody");
+    tbody.innerHTML = "";
+    const lista = Array.isArray(dane) ? dane : dane.rows || [];
+    lista.forEach(u => {
+      const row = `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.imie}</td>
+          <td>${u.nazwisko}</td>
+          <td>${u.email}</td>
+          <td>${u.rola}</td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
+
+  } catch (err) {
+    alert("Błąd: " + err);
+  }
+}
+</script>
+
+</body>
+</html>

@@ -7,12 +7,20 @@ app.use(cors());
 app.use(express.json());
 
 // 🔑 Render używa zmiennej środowiskowej DATABASE_URL
+const { Pool } = require('pg');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: 'baza_s0r0_user',           // Twój login do bazy
+  host: 'dpg-d73f6gvdiees73eronl0-a.frankfurt-postgres.render.com',    // np. db.postgres.render.com
+  database: 'baza_s0r0',
+  password: '8agqccLgW2HYWy4qfcvwM1sx25bDvNRR',     // uwaga, jawne hasło
+  port: 5432,
   ssl: {
     rejectUnauthorized: false
   }
 });
+
+module.exports = pool;
 
 // 📌 Endpoint - wszyscy użytkownicy
 app.get('/uzytkownicy', async (req, res) => {
