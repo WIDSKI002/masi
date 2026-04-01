@@ -6,8 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔑 Render używa zmiennej środowiskowej DATABASE_URL
-const { Pool } = require('pg');
+
 
 const pool = new Pool({
   user: 'baza_s0r0_user',           // Twój login do bazy
