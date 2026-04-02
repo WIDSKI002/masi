@@ -38,7 +38,7 @@ app.get('/uzytkownicy', async (req, res) => {
 app.post('/login', async (req, res) => {
   const { login, password } = req.body;
   const result = await pool.query(
-    'SELECT * FROM uzytkownicy WHERE login = $1 AND password = $2',
+    'SELECT * FROM uzytkownicy WHERE email = $1 AND haslo = $2',
     [login, password]
   );
   res.json(result.rows);
