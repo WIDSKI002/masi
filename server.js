@@ -21,7 +21,6 @@ const pool = new Pool({
 
 module.exports = pool;
 
-// 📌 Endpoint - wszyscy użytkownicy
 app.get('/uzytkownicy', async (req, res) => {
   try {
     const result = await pool.query(
@@ -35,7 +34,18 @@ app.get('/uzytkownicy', async (req, res) => {
   }
 });
 
-// 📌 Endpoint testowy
+
+app.post('/login', async (req, res) => {
+  const { login, password } = req.body;
+  const result = await pool.query(
+    'SELECT * FROM uzytkownicy WHERE login = $1 AND password = $2',
+    [login, password]
+  );
+  res.json(result.rows);
+});
+
+
+
 app.get('/', (req, res) => {
   res.send('API działa 🚀');
 });
