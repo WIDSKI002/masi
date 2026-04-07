@@ -66,7 +66,7 @@ app.post('/rejestracja', async (req, res) => {
   const { imie, nazwisko, email, password, rola } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo, rola) VALUES ($1, $2, $3, $4, $5)',
+      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo, rola, data_utworzenia) VALUES ($1, $2, $3, $4, $5, $6)',
       [imie, nazwisko, email, password, rola]
     );
     res.json(result.rows);

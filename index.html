@@ -79,8 +79,7 @@ async function pobierzUzytkownikow() {
   <input type="text" id="tytul" placeholder="Tytuł">
   <input type="text" id="opis" placeholder="Opis">
   <select id="trener">
-    <option value="trener">Trener</option>
-    <option value="admin">Admin</option>
+
   </select>
   <button onclick="dodajSzkolenie()">Dodaj</button>
 </div>
@@ -105,10 +104,7 @@ async function zarejestruj() {
   const password = document.getElementById("password").value;
   const password2 = document.getElementById("password2").value;
   const rola = document.getElementById("rola").value;
-  if (password !== password2) {
-    alert("Hasła nie są takie same");
-    return;
-  }
+const data_utworzenia = new Date().toISOString();
   const res = await fetch(API_URL+'/rejestracja', {
     method: 'POST',
     headers: {
