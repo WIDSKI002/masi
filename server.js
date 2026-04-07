@@ -33,7 +33,21 @@ app.get('/uzytkownicy', async (req, res) => {
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
-
+app.get('/trenera', async (req, res) => {
+  const result = await pool.query(
+    'SELECT id, imie, nazwisko FROM uzytkownicy WHERE rola = $1',
+    ['trener']
+  );
+  res.json(result.rows);
+});
+app.post('/dodajSzkolenie', async (req, res) => {
+  const { tytul, opis, trener } = req.body;
+  const result = await pool.query(
+    'INSERT INTO szkolenia (tytul, opis, trener) VALUES ($1, $2, $3)',
+    [tytul, opis, trener]
+  );
+  res.json(result.rows);
+});
 
 app.post('/login', async (req, res) => {
   const { login, password } = req.body;
@@ -41,16 +55,32 @@ app.post('/login', async (req, res) => {
     'SELECT * FROM uzytkownicy WHERE email = $1 AND haslo = $2',
     [login, password]
   );
-  res.json(result.rows);
+  if (result.rows.length > 0) {
+    res.json(result.rows[0]);
+  } else {
+    res.status(401).json({ error: 'Nieprawidłowy login lub hasło' });
+  }
 });
 
-
+app.post('/rejestracja', async (req, res) => {
+  const { imie, nazwisko, email, password, rola } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo, rola) VALUES ($1, $2, $3, $4, $5)',
+      [imie, nazwisko, email, password, rola]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
 
 app.get('/', (req, res) => {
   res.send('API działa 🚀');
 });
 
-// 🔥 PORT z Rendera
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
