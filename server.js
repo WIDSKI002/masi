@@ -77,7 +77,15 @@ app.post('/rejestracja', async (req, res) => {
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
-
+app.get('/api/role', async (req, res) => {
+  try {
+      const result = await pool.query('SELECT * FROM role ORDER BY id');
+      res.json(result.rows);
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
 app.get('/', (req, res) => {
   res.send('API działa 🚀');
 });

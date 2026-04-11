@@ -56,7 +56,7 @@ async function pobierzUzytkownikow() {
 <br>
 <br>
 <div id="logowanie">
-  <input type="text" id="email" placeholder="email">
+  <input type="text" id="email" placeholder="login">
   <input type="password" id="password" placeholder="Hasło">
   <button onclick="zaloguj()">Zaloguj</button>
 </div>
@@ -64,13 +64,34 @@ async function pobierzUzytkownikow() {
 <div id="rejestracja">
   <input type="text" id="imie" placeholder="Imię">
   <input type="text" id="nazwisko" placeholder="Nazwisko">
-  <input type="email" id="email" placeholder="email">
-  <input type="password" id="password" placeholder="Hasło">
+  <input type="text" id="email1" placeholder="login">
+  <input type="password" id="password1" placeholder="Hasło">
   <input type="password" id="password2" placeholder="Powtórz hasło">
   <select id="rola">
-    <option value="user">User</option>
-    <option value="trener">trener</option>
-  </select>
+    <option value="">Ładowanie ról...</option>
+</select>
+
+<script>
+
+   fetch(API_URL+'/uzytkownicy')
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('rola');
+        select.innerHTML = '<option value="">-- wybierz rolę --</option>';
+
+        data.forEach(rola => {
+            const option = document.createElement('option');
+            option.value = rola.id;
+            option.textContent = rola.nazwa;
+            select.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Błąd:', error);
+        document.getElementById('roleSelect').innerHTML =
+            '<option value="">Błąd ładowania ról</option>';
+    });
+</script>
   <button onclick="zarejestruj()">Zarejestruj</button>
 </div>
 
@@ -100,17 +121,22 @@ async function pobierzTrenerow() {
 async function zarejestruj() {
   const imie = document.getElementById("imie").value;
   const nazwisko = document.getElementById("nazwisko").value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = document.getElementById("email1").value;
+  const password = document.getElementById("password1").value;
   const password2 = document.getElementById("password2").value;
   const rola = document.getElementById("rola").value;
+  if (password !== password2) {
+    alert("Hasła się nie zgadzają!");
+    return;
+  }
+
 const data_utworzenia = new Date().toISOString();
   const res = await fetch(API_URL+'/rejestracja', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ imie, nazwisko, email, password }),
+    body: JSON.stringify({ imie, nazwisko, email, password,rola }),
   });
   const data = await res.json();
   console.log(data);
@@ -140,7 +166,7 @@ async function zaloguj() {
     body: JSON.stringify({ login, password }),
   });
   const data = await res.json();
-if (data.length === 1) {
+if (res.ok) {
   window.location.href = "strona.html";
 } else {
   alert("Błąd: nieprawidłowy login lub hasło");
