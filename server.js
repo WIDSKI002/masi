@@ -53,14 +53,17 @@ app.post('/dodajSzkolenie', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-  const { login, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
   const result = await pool.query(
-    'SELECT * FROM uzytkownicy WHERE email = $1 AND haslo = $2',
-    [login, hashedPassword]
+    'SELECT * FROM uzytkownicy WHERE email = $1',
+    [login]
   );
-  if (result.rows.length > 0) {
-    res.json(result.rows[0]);
+  const user = result.rows[0];
+  if (!user) {
+    return res.status(401).json({ error: 'Nieprawidłowy login lub hasło' });
+  }
+  const isMatch = await bcrypt.compare(password, user.haslo);
+  if (isMatch) {
+    res.json(user);
   } else {
     res.status(401).json({ error: 'Nieprawidłowy login lub hasło' });
   }
