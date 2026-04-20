@@ -24,7 +24,7 @@ module.exports = pool;
 app.get('/uzytkownicy', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, imie, nazwisko, email, rola, data_utworzenia FROM uzytkownicy'
+      'SELECT id, imie, nazwisko, email,  data_utworzenia FROM uzytkownicy'
     );
 
     res.json(result.rows);
@@ -67,10 +67,14 @@ app.post('/rejestracja', async (req, res) => {
   try {
     
     const result = await pool.query(
-      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo, rola) VALUES ($1, $2, $3, $4, $5)',
-      [imie, nazwisko, email, password, rola]
+      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo) VALUES ($1, $2, $3, $4)',
+      [imie, nazwisko, email, password]
+    ); 
+    const res = await pool.query(
+      'INSERT INTO uzytkownik_role (uzytkownik_id, rola_id) VALUES ($1, $2)',
+      [result.rows[0].id,rola]
     );
-    console.log(result.rows[0]);
+    console.log(result.rows[0]+res.rows[0]);
     res.json(result.rows);
   } catch (err) {
     console.error(err);

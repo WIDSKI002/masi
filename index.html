@@ -73,7 +73,7 @@ async function pobierzUzytkownikow() {
 
 <script>
 
-   fetch(API_URL+'/uzytkownicy')
+   fetch(API_URL+'/api/role')
     .then(response => response.json())
     .then(data => {
         const select = document.getElementById('rola');
