@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -51,9 +54,10 @@ app.post('/dodajSzkolenie', async (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { login, password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
   const result = await pool.query(
     'SELECT * FROM uzytkownicy WHERE email = $1 AND haslo = $2',
-    [login, password]
+    [login, hashedPassword]
   );
   if (result.rows.length > 0) {
     res.json(result.rows[0]);
@@ -65,17 +69,17 @@ app.post('/login', async (req, res) => {
 app.post('/rejestracja', async (req, res) => {
   const { imie, nazwisko, email, password, rola } = req.body;
   try {
-    
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
     const result = await pool.query(
-      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo) VALUES ($1, $2, $3, $4)',
-      [imie, nazwisko, email, password]
+      'INSERT INTO uzytkownicy (imie, nazwisko, email, haslo) VALUES ($1, $2, $3, $4) RETURNING id',
+      [imie, nazwisko, email, hashedPassword]
     ); 
     const res = await pool.query(
       'INSERT INTO uzytkownik_role (uzytkownik_id, rola_id) VALUES ($1, $2)',
       [result.rows[0].id,rola]
     );
     console.log(result.rows[0]+res.rows[0]);
-    res.json(result.rows);
+    res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Błąd serwera' });
