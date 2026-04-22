@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
+
 
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -64,7 +66,17 @@ app.post('/login', async (req, res) => {
   }
   const isMatch = await bcrypt.compare(password, user.haslo);
   if (isMatch) {
-    res.json(user);
+    const payload = {
+      userId: result.rows[0].id,
+      email: login
+    };
+    
+    const secret = process.env.JWT_SECRET;
+    
+    const token = jwt.sign(payload, secret, {
+      expiresIn: "1h"
+    });
+    res.json({ token });
   } else {
     res.status(401).json({ error: 'Nieprawidłowy login lub hasło' });
   }
@@ -102,7 +114,23 @@ app.get('/', (req, res) => {
   res.send('API działa 🚀');
 });
 
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
 
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Brak tokena' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; 
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Nieprawidłowy token' });
+  }
+}
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
