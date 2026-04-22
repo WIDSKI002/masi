@@ -71,7 +71,7 @@ app.post('/login', async (req, res) => {
       email: login
     };
     
-    const secret = process.env.JWT_SECRET;
+    const secret = "key";
     
     const token = jwt.sign(payload, secret, {
       expiresIn: "1h"

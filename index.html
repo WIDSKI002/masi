@@ -166,7 +166,7 @@ async function zaloguj() {
     body: JSON.stringify({ login, password }),
   });
   const data = await res.json();
-if (res.ok) {
+if (res & res.token) {
   window.location.href = "strona.html";
 } else {
   alert("Błąd: nieprawidłowy login lub hasło");
