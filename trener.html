@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Trenera</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    .tab-buttons {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-primary { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; }
+    .btn-primary:hover { background-color: #45a049; }
+    .btn-secondary { background-color: #2196F3; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; }
+    .btn-secondary:hover { background-color: #0b7dda; }
+    .btn-danger { background-color: #f44336; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; }
+    .btn-danger:hover { background-color: #da190b; }
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+    .card h3 {
+      margin-top: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      background-color: white;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    table th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+    table tr:hover {
+      background-color: #f5f5f5;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 5px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover { color: black; }
+    .form-group {
+      margin: 15px 0;
+    }
+    input, select, textarea {
+      padding: 8px;
+      width: 100%;
+      margin: 5px 0;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+    }
+    textarea {
+      min-height: 100px;
+      font-family: Arial, sans-serif;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-box {
+      background-color: #e3f2fd;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+      border-left: 4px solid #2196F3;
+    }
+    .stat-box h3 {
+      margin: 0 0 10px 0;
+      color: #666;
+      font-size: 14px;
+    }
+    .stat-box .number {
+      font-size: 28px;
+      font-weight: bold;
+      color: #2196F3;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Panel Trenera</h1>
+    <div>
+      <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
+    </div>
+  </div>
+
+  <div class="tab-buttons">
+    <button onclick="pokazTab('tab-moje-szkolenia')" class="btn-primary">Moje szkolenia</button>
+    <button onclick="pokazTab('tab-raporty')" class="btn-secondary">Raporty</button>
+    <button onclick="pokazTab('tab-certyfikaty')" class="btn-secondary">Certyfikaty</button>
+  </div>
+
+  <!-- TAB: Moje szkolenia -->
+  <div id="tab-moje-szkolenia" style="display: block;">
+    <h2>Moje szkolenia</h2>
+    <button onclick="otworzModalDodajSzkolenie()" class="btn-primary" style="margin-bottom: 15px;">Dodaj nowe szkolenie</button>
+    <div id="lista-moich-szkolen"></div>
+  </div>
+
+  <!-- TAB: Raporty -->
+  <div id="tab-raporty" style="display: none;">
+    <h2>Raporty szkolenia</h2>
+    <div id="lista-raportow"></div>
+  </div>
+
+  <!-- TAB: Certyfikaty -->
+  <div id="tab-certyfikaty" style="display: none;">
+    <h2>Wydaj certyfikaty</h2>
+    <div id="lista-certyfikatow"></div>
+  </div>
+</div>
+
+<!-- MODAL: Dodaj szkolenie -->
+<div id="modal-dodaj-szkolenie" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-dodaj-szkolenie')">&times;</span>
+    <h2>Dodaj nowe szkolenie</h2>
+    
+    <div class="form-group">
+      <label>Tytuł:</label>
+      <input type="text" id="forma-tytul" placeholder="Tytuł szkolenia" required>
+    </div>
+    
+    <div class="form-group">
+      <label>Opis:</label>
+      <textarea id="forma-opis" placeholder="Opis szkolenia"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Limit miejsc:</label>
+      <input type="number" id="forma-limit" placeholder="Limit miejsc" min="1">
+    </div>
+    
+    <div class="form-group">
+      <label>Cena:</label>
+      <input type="number" id="forma-cena" placeholder="Cena w zł" step="0.01" min="0">
+    </div>
+    
+    <div class="form-group">
+      <label>Data rozpoczęcia:</label>
+      <input type="date" id="forma-data-start">
+    </div>
+    
+    <div class="form-group">
+      <label>Data zakończenia:</label>
+      <input type="date" id="forma-data-end">
+    </div>
+    
+    <button onclick="dodajSzkolenie()" class="btn-primary">Dodaj szkolenie</button>
+  </div>
+</div>
+
+<!-- MODAL: Edytuj szkolenie -->
+<div id="modal-edytuj-szkolenie" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-edytuj-szkolenie')">&times;</span>
+    <h2>Edytuj szkolenie</h2>
+    
+    <div class="form-group">
+      <label>Tytuł:</label>
+      <input type="text" id="forma-edit-tytul" placeholder="Tytuł szkolenia" required>
+    </div>
+    
+    <div class="form-group">
+      <label>Opis:</label>
+      <textarea id="forma-edit-opis" placeholder="Opis szkolenia"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Limit miejsc:</label>
+      <input type="number" id="forma-edit-limit" placeholder="Limit miejsc" min="1">
+    </div>
+    
+    <div class="form-group">
+      <label>Cena:</label>
+      <input type="number" id="forma-edit-cena" placeholder="Cena w zł" step="0.01" min="0">
+    </div>
+    
+    <div class="form-group">
+      <label>Data rozpoczęcia:</label>
+      <input type="date" id="forma-edit-data-start">
+    </div>
+    
+    <div class="form-group">
+      <label>Data zakończenia:</label>
+      <input type="date" id="forma-edit-data-end">
+    </div>
+    
+    <div class="form-group">
+      <label>Status:</label>
+      <select id="forma-edit-status">
+        <option value="">Wybierz status</option>
+        <option value="planowane">Planowane</option>
+        <option value="aktywne">Aktywne</option>
+        <option value="archiwalne">Archiwalne</option>
+      </select>
+    </div>
+    
+    <button onclick="aktualizujSzkolenie()" class="btn-primary">Aktualizuj szkolenie</button>
+  </div>
+</div>
+
+<!-- MODAL: Raport szkolenia -->
+<div id="modal-raport" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-raport')">&times;</span>
+    <h2 id="raport-tytul"></h2>
+    
+    <h3>Lista uczestników i obecność</h3>
+    <table id="table-raport">
+      <thead>
+        <tr>
+          <th>Imię</th>
+          <th>Nazwisko</th>
+          <th>Email</th>
+          <th>Status zapisu</th>
+          <th>Obecności</th>
+          <th>Certyfikat</th>
+          <th>Akcja</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-raport"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL: Wydaj certyfikat -->
+<div id="modal-certyfikat" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-certyfikat')">&times;</span>
+    <h2>Wydaj certyfikat</h2>
+    
+    <p id="cert-info"></p>
+    
+    <button onclick="wydajCertyfikat()" class="btn-primary">Wydaj certyfikat</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://masi-3c4j.onrender.com";
+let aktualneIdSzkolenia = null;
+let aktualnyIdUczestnika = null;
+let aktualnyIdRaportu = null;
+
+const token = localStorage.getItem('token');
+if (!token) {
+  window.location.href = "index.html";
+}
+
+function getAuthHeader() {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+function wyloguj() {
+  localStorage.clear();
+  window.location.href = "index.html";
+}
+
+function pokazTab(tabId) {
+  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+    tab.style.display = 'none';
+  });
+  document.getElementById(tabId).style.display = 'block';
+  
+  if (tabId === 'tab-moje-szkolenia') {
+    pobierzMojeSzkolenia();
+  } else if (tabId === 'tab-raporty') {
+    pobierzRaporty();
+  } else if (tabId === 'tab-certyfikaty') {
+    pobierzCertyfikaty();
+  }
+}
+
+// ============ SZKOLENIA ============
+async function pobierzMojeSzkolenia() {
+  try {
+    const res = await fetch(API_URL + '/moje-szkolenia', {
+      headers: getAuthHeader()
+    });
+    const szkolenia = await res.json();
+    wyswietlMojeSzkolenia(szkolenia);
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+function wyswietlMojeSzkolenia(szkolenia) {
+  const lista = document.getElementById('lista-moich-szkolen');
+  lista.innerHTML = '';
+  
+  if (szkolenia.length === 0) {
+    lista.innerHTML = '<p>Nie masz żadnych szkoleń.</p>';
+    return;
+  }
+  
+  szkolenia.forEach(s => {
+    const card = `
+      <div class="card">
+        <h3>${s.tytul}</h3>
+        <p><strong>Opis:</strong> ${s.opis || 'Brak'}</p>
+        <p><strong>Status:</strong> ${s.status || 'Aktywne'} | <strong>Limit:</strong> ${s.limit_miejsc || 'Brak'} | <strong>Cena:</strong> ${s.cena || 'Brak'} zł</p>
+        <p><strong>Harmonogram:</strong> ${s.data_rozpoczecia || 'Brak'} - ${s.data_zakonczenia || 'Brak'}</p>
+        <button onclick="otworzModalEdytuj(${s.id})" class="btn-secondary">Edytuj</button>
+        <button onclick="usunSzkolenie(${s.id})" class="btn-danger">Usuń</button>
+      </div>
+    `;
+    lista.innerHTML += card;
+  });
+}
+
+function otworzModalDodajSzkolenie() {
+  document.getElementById('modal-dodaj-szkolenie').style.display = 'block';
+}
+
+async function dodajSzkolenie() {
+  const tytul = document.getElementById('forma-tytul').value;
+  const opis = document.getElementById('forma-opis').value;
+  const limit_miejsc = document.getElementById('forma-limit').value;
+  const cena = document.getElementById('forma-cena').value;
+  const data_rozpoczecia = document.getElementById('forma-data-start').value;
+  const data_zakonczenia = document.getElementById('forma-data-end').value;
+  
+  if (!tytul) {
+    alert('Wpisz tytuł');
+    return;
+  }
+  
+  try {
+    const res = await fetch(API_URL + '/dodajSzkolenie', {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify({
+        tytul,
+        opis,
+        trener: null // Pobieramy z tokena
+      })
+    });
+    
+    if (res.ok) {
+      alert('Szkolenie dodane!');
+      zamknijModal('modal-dodaj-szkolenie');
+      document.getElementById('forma-tytul').value = '';
+      document.getElementById('forma-opis').value = '';
+      document.getElementById('forma-limit').value = '';
+      document.getElementById('forma-cena').value = '';
+      pobierzMojeSzkolenia();
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function otworzModalEdytuj(szkolenie_id) {
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + szkolenie_id);
+    const szkolenie = await res.json();
+    
+    aktualneIdSzkolenia = szkolenie_id;
+    document.getElementById('forma-edit-tytul').value = szkolenie.tytul;
+    document.getElementById('forma-edit-opis').value = szkolenie.opis || '';
+    document.getElementById('forma-edit-limit').value = szkolenie.limit_miejsc || '';
+    document.getElementById('forma-edit-cena').value = szkolenie.cena || '';
+    document.getElementById('forma-edit-data-start').value = szkolenie.data_rozpoczecia || '';
+    document.getElementById('forma-edit-data-end').value = szkolenie.data_zakonczenia || '';
+    document.getElementById('forma-edit-status').value = szkolenie.status || '';
+    
+    document.getElementById('modal-edytuj-szkolenie').style.display = 'block';
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function aktualizujSzkolenie() {
+  const tytul = document.getElementById('forma-edit-tytul').value;
+  const opis = document.getElementById('forma-edit-opis').value;
+  const limit_miejsc = document.getElementById('forma-edit-limit').value;
+  const cena = document.getElementById('forma-edit-cena').value;
+  const data_rozpoczecia = document.getElementById('forma-edit-data-start').value;
+  const data_zakonczenia = document.getElementById('forma-edit-data-end').value;
+  const status = document.getElementById('forma-edit-status').value;
+  
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + aktualneIdSzkolenia, {
+      method: 'PUT',
+      headers: getAuthHeader(),
+      body: JSON.stringify({
+        tytul,
+        opis,
+        limit_miejsc,
+        cena,
+        data_rozpoczecia,
+        data_zakonczenia,
+        status
+      })
+    });
+    
+    if (res.ok) {
+      alert('Szkolenie zaktualizowane!');
+      zamknijModal('modal-edytuj-szkolenie');
+      pobierzMojeSzkolenia();
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function usunSzkolenie(szkolenie_id) {
+  if (!confirm('Czy na pewno chcesz usunąć to szkolenie?')) return;
+  
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + szkolenie_id, {
+      method: 'DELETE',
+      headers: getAuthHeader()
+    });
+    
+    if (res.ok) {
+      alert('Szkolenie usunięte!');
+      pobierzMojeSzkolenia();
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+// ============ RAPORTY ============
+async function pobierzRaporty() {
+  try {
+    const res = await fetch(API_URL + '/moje-szkolenia', {
+      headers: getAuthHeader()
+    });
+    const szkolenia = await res.json();
+    wyswietlRaporty(szkolenia);
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+function wyswietlRaporty(szkolenia) {
+  const lista = document.getElementById('lista-raportow');
+  lista.innerHTML = '';
+  
+  szkolenia.forEach(s => {
+    const card = `
+      <div class="card">
+        <h3>${s.tytul}</h3>
+        <p>${s.opis || 'Brak opisu'}</p>
+        <button onclick="pokazRaport(${s.id}, '${s.tytul}')" class="btn-secondary">Wyświetl raport</button>
+      </div>
+    `;
+    lista.innerHTML += card;
+  });
+}
+
+async function pokazRaport(szkolenie_id, tytul) {
+  try {
+    const res = await fetch(API_URL + '/raporty/szkolenie/' + szkolenie_id, {
+      headers: getAuthHeader()
+    });
+    const raport = await res.json();
+    
+    aktualnyIdRaportu = szkolenie_id;
+    document.getElementById('raport-tytul').textContent = tytul;
+    
+    const tbody = document.getElementById('tbody-raport');
+    tbody.innerHTML = '';
+    
+    raport.uczestnicy.forEach(u => {
+      const obecnosci_count = u.obecnosci.filter(o => o.obecny).length;
+      const row = `
+        <tr>
+          <td>${u.imie}</td>
+          <td>${u.nazwisko}</td>
+          <td>${u.email}</td>
+          <td>${u.status}</td>
+          <td>${obecnosci_count}/${raport.sesje.length}</td>
+          <td>${u.ma_certyfikat ? 'Tak ✓' : 'Nie'}</td>
+          <td>
+            ${!u.ma_certyfikat ? `<button onclick="otworzModalWydajCert(${u.id}, '${u.imie} ${u.nazwisko}')'" class="btn-primary" style="font-size:12px; padding: 5px 10px;">Wydaj</button>` : ''}
+          </td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
+    
+    document.getElementById('modal-raport').style.display = 'block';
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+// ============ CERTYFIKATY ============
+function otworzModalWydajCert(uczestnik_id, nazwa) {
+  aktualnyIdUczestnika = uczestnik_id;
+  document.getElementById('cert-info').textContent = 'Wydaj certyfikat dla: ' + nazwa;
+  document.getElementById('modal-certyfikat').style.display = 'block';
+}
+
+async function wydajCertyfikat() {
+  try {
+    const res = await fetch(API_URL + '/certyfikaty', {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify({
+        uzytkownik_id: aktualnyIdUczestnika,
+        szkolenie_id: aktualnyIdRaportu
+      })
+    });
+    
+    if (res.ok) {
+      alert('Certyfikat wydany!');
+      zamknijModal('modal-certyfikat');
+      pokazRaport(aktualnyIdRaportu, document.getElementById('raport-tytul').textContent);
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function pobierzCertyfikaty() {
+  const lista = document.getElementById('lista-certyfikatow');
+  lista.innerHTML = '<p>Funkcjonalność w przygotowaniu...</p>';
+}
+
+// ============ MODAL ============
+function zamknijModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+window.onclick = function(event) {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  });
+}
+
+// Inicjalizacja
+document.addEventListener('DOMContentLoaded', function() {
+  pobierzMojeSzkolenia();
+});
+</script>
+</body>
+</html>

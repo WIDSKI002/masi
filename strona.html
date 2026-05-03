@@ -1,9 +1,26 @@
 <script>
     const token = localStorage.getItem('token');
   
-  //  if (!token) {
+    if (!token) {
   
-    //  window.location.href = '/index.html';
+        window.location.href = "index.html";
     }
+    function wyloguj(){
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+function szkolenia(){
+
+window.location.href = "szkolenia.html";
+
+}
+function sesje_szkolen(){
+
+window.location.href = "sesja.html";
+
+}
+
   </script>
-  zalogowany
+  <button onclick="szkolenia()">Szkolenia</button>
+  <button onclick="sesje_szkolen()">Sesje Szkolen</button>
+  <button onclick="wyloguj()">wyloguj  </button>
