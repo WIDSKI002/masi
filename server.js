@@ -89,11 +89,11 @@ app.post('/login', async (req, res) => {
   }
   const isMatch = await bcrypt.compare(password, user.haslo);
   if (isMatch) {
-    const r = await pool.query('SELECT rola_id FROM uzytkownik_role where "uzytkownik_id" = $1 RETURNING rola_id',[user.id]);
+    const r = await pool.query('SELECT rola_id FROM uzytkownik_role WHERE uzytkownik_id = $1',[user.id]);
     const payload = {
       userId: user.id,
       email: login,
-      rola: r.rows[0].id
+      rola: r.rows[0].rola_id
     };
     
     const secret = process.env.JWT_SECRET || "key";
