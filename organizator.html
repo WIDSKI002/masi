@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Organizatora</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    .tab-buttons {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-primary { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; }
+    .btn-primary:hover { background-color: #45a049; }
+    .btn-secondary { background-color: #2196F3; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; }
+    .btn-secondary:hover { background-color: #0b7dda; }
+    .btn-danger { background-color: #f44336; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; }
+    .btn-danger:hover { background-color: #da190b; }
+    
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+    .card h3 {
+      margin-top: 0;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      background-color: white;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    table th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+    table tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 5px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover { color: black; }
+    
+    .form-group {
+      margin: 15px 0;
+    }
+    input, select, textarea {
+      padding: 8px;
+      width: 100%;
+      margin: 5px 0;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+    }
+    textarea {
+      min-height: 100px;
+      font-family: Arial, sans-serif;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Panel Organizatora</h1>
+    <div>
+      <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
+    </div>
+  </div>
+
+  <div class="tab-buttons">
+    <button onclick="pokazTab('tab-szkolenia')" class="btn-primary">Szkolenia</button>
+    <button onclick="pokazTab('tab-sesje')" class="btn-secondary">Sesje</button>
+  </div>
+
+  <!-- TAB: Szkolenia -->
+  <div id="tab-szkolenia" style="display: block;">
+    <h2>Moje szkolenia</h2>
+    <button onclick="otworzModalDodajSzkolenie()" class="btn-primary" style="margin-bottom: 15px;">Dodaj nowe szkolenie</button>
+    <div id="lista-szkolen"></div>
+  </div>
+
+  <!-- TAB: Sesje -->
+  <div id="tab-sesje" style="display: none;">
+    <h2>Zarządzanie sesjami</h2>
+    <button onclick="otworzModalDodajSesje()" class="btn-primary" style="margin-bottom: 15px;">Dodaj nową sesję</button>
+    <div id="lista-sesji"></div>
+  </div>
+</div>
+
+<!-- MODAL: Dodaj szkolenie -->
+<div id="modal-dodaj-szkolenie" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-dodaj-szkolenie')">&times;</span>
+    <h2>Dodaj nowe szkolenie</h2>
+    
+    <div class="form-group">
+      <label>Tytuł:</label>
+      <input type="text" id="forma-tytul" placeholder="Tytuł szkolenia" required>
+    </div>
+    
+    <div class="form-group">
+      <label>Opis:</label>
+      <textarea id="forma-opis" placeholder="Opis szkolenia"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Trener:</label>
+      <select id="forma-trener" required>
+        <option value="">-- Wybierz trenera --</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Limit miejsc:</label>
+      <input type="number" id="forma-limit" placeholder="Limit miejsc" min="1">
+    </div>
+    
+    <div class="form-group">
+      <label>Cena:</label>
+      <input type="number" id="forma-cena" placeholder="Cena w zł" step="0.01" min="0">
+    </div>
+    
+    <div class="form-group">
+      <label>Data rozpoczęcia:</label>
+      <input type="date" id="forma-data-start">
+    </div>
+    
+    <div class="form-group">
+      <label>Data zakończenia:</label>
+      <input type="date" id="forma-data-end">
+    </div>
+    
+    <button onclick="dodajSzkolenie()" class="btn-primary">Dodaj szkolenie</button>
+  </div>
+</div>
+
+<!-- MODAL: Edytuj szkolenie -->
+<div id="modal-edytuj-szkolenie" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-edytuj-szkolenie')">&times;</span>
+    <h2>Edytuj szkolenie</h2>
+    
+    <div class="form-group">
+      <label>Tytuł:</label>
+      <input type="text" id="forma-edit-tytul" placeholder="Tytuł szkolenia" required>
+    </div>
+    
+    <div class="form-group">
+      <label>Opis:</label>
+      <textarea id="forma-edit-opis" placeholder="Opis szkolenia"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Limit miejsc:</label>
+      <input type="number" id="forma-edit-limit" placeholder="Limit miejsc" min="1">
+    </div>
+    
+    <div class="form-group">
+      <label>Cena:</label>
+      <input type="number" id="forma-edit-cena" placeholder="Cena w zł" step="0.01" min="0">
+    </div>
+    
+    <div class="form-group">
+      <label>Data rozpoczęcia:</label>
+      <input type="date" id="forma-edit-data-start">
+    </div>
+    
+    <div class="form-group">
+      <label>Data zakończenia:</label>
+      <input type="date" id="forma-edit-data-end">
+    </div>
+    
+    <button onclick="aktualizujSzkolenie()" class="btn-primary">Aktualizuj szkolenie</button>
+  </div>
+</div>
+
+<!-- MODAL: Dodaj sesję -->
+<div id="modal-dodaj-sesje" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="zamknijModal('modal-dodaj-sesje')">&times;</span>
+    <h2>Dodaj nową sesję</h2>
+    
+    <div class="form-group">
+      <label>Szkolenie:</label>
+      <select id="forma-sesje-szkolenie" style="width: 100%; padding: 8px;">
+        <option value="">-- Wybierz szkolenie --</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Data sesji:</label>
+      <input type="date" id="forma-sesje-data" required>
+    </div>
+    
+    <div class="form-group">
+      <label>Lokalizacja:</label>
+      <input type="text" id="forma-sesje-lokalizacja" placeholder="Wpisz lokalizację" required>
+    </div>
+    
+    <button onclick="dodajSesje()" class="btn-primary">Dodaj sesję</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://masi-3c4j.onrender.com";
+let aktualneIdSzkolenia = null;
+let wszyscySzkolenia = [];
+
+const token = localStorage.getItem('token');
+if (!token) {
+  window.location.href = "index.html";
+}
+
+function getAuthHeader() {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+function wyloguj() {
+  localStorage.clear();
+  window.location.href = "index.html";
+}
+
+function pokazTab(tabId) {
+  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+    tab.style.display = 'none';
+  });
+  document.getElementById(tabId).style.display = 'block';
+  
+  if (tabId === 'tab-szkolenia') {
+    pobierzSzkolenia();
+  } else if (tabId === 'tab-sesje') {
+    pobierzSesjeDoBazardzania();
+  }
+}
+
+// ============ SZKOLENIA ============
+async function pobierzSzkolenia() {
+  try {
+    const res = await fetch(API_URL + '/szkolenia');
+    const szkolenia = await res.json();
+    wszyscySzkolenia = szkolenia;
+    wyswietlSzkolenia(szkolenia);
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+function wyswietlSzkolenia(szkolenia) {
+  const lista = document.getElementById('lista-szkolen');
+  lista.innerHTML = '';
+  
+  if (szkolenia.length === 0) {
+    lista.innerHTML = '<p>Nie masz żadnych szkoleń.</p>';
+    return;
+  }
+  
+  szkolenia.forEach(s => {
+    const card = `
+      <div class="card">
+        <h3>${s.tytul}</h3>
+        <p><strong>Trener:</strong> ${s.imie ? s.imie + ' ' + s.nazwisko : 'Nie przypisany'}</p>
+        <p><strong>Opis:</strong> ${s.opis || 'Brak'}</p>
+        <p><strong>Status:</strong> ${s.status || 'Aktywne'} | <strong>Limit:</strong> ${s.limit_miejsc || 'Brak'} | <strong>Cena:</strong> ${s.cena || 'Brak'} zł</p>
+        <button onclick="otworzModalEdytuj(${s.id})" class="btn-secondary">Edytuj</button>
+        <button onclick="usunSzkolenie(${s.id})" class="btn-danger">Usuń</button>
+      </div>
+    `;
+    lista.innerHTML += card;
+  });
+}
+
+async function otworzModalDodajSzkolenie() {
+  try {
+    // Pobierz trenerów
+    const res = await fetch(API_URL + '/trenera');
+    const trenery = await res.json();
+    
+    const select = document.getElementById('forma-trener');
+    select.innerHTML = '<option value="">-- Wybierz trenera --</option>';
+    
+    trenery.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.id;
+      option.textContent = t.imie + ' ' + t.nazwisko;
+      select.appendChild(option);
+    });
+    
+    document.getElementById('modal-dodaj-szkolenie').style.display = 'block';
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function dodajSzkolenie() {
+  const tytul = document.getElementById('forma-tytul').value;
+  const opis = document.getElementById('forma-opis').value;
+  const trener = document.getElementById('forma-trener').value;
+  const limit_miejsc = document.getElementById('forma-limit').value;
+  const cena = document.getElementById('forma-cena').value;
+  
+  if (!tytul || !trener) {
+    alert('Wpisz tytuł i wybierz trenera');
+    return;
+  }
+  
+  try {
+    const res = await fetch(API_URL + '/dodajSzkolenie', {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify({
+        tytul,
+        opis,
+        trener
+      })
+    });
+    
+    if (res.ok) {
+      alert('Szkolenie dodane!');
+      zamknijModal('modal-dodaj-szkolenie');
+      document.getElementById('forma-tytul').value = '';
+      document.getElementById('forma-opis').value = '';
+      document.getElementById('forma-trener').value = '';
+      document.getElementById('forma-limit').value = '';
+      document.getElementById('forma-cena').value = '';
+      pobierzSzkolenia();
+    } else {
+      const error = await res.json();
+      alert('Błąd: ' + error.error);
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function otworzModalEdytuj(szkolenie_id) {
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + szkolenie_id);
+    const szkolenie = await res.json();
+    
+    aktualneIdSzkolenia = szkolenie_id;
+    document.getElementById('forma-edit-tytul').value = szkolenie.tytul;
+    document.getElementById('forma-edit-opis').value = szkolenie.opis || '';
+    document.getElementById('forma-edit-limit').value = szkolenie.limit_miejsc || '';
+    document.getElementById('forma-edit-cena').value = szkolenie.cena || '';
+    document.getElementById('forma-edit-data-start').value = szkolenie.data_rozpoczecia || '';
+    document.getElementById('forma-edit-data-end').value = szkolenie.data_zakonczenia || '';
+    
+    document.getElementById('modal-edytuj-szkolenie').style.display = 'block';
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function aktualizujSzkolenie() {
+  const tytul = document.getElementById('forma-edit-tytul').value;
+  const opis = document.getElementById('forma-edit-opis').value;
+  const limit_miejsc = document.getElementById('forma-edit-limit').value;
+  const cena = document.getElementById('forma-edit-cena').value;
+  const data_rozpoczecia = document.getElementById('forma-edit-data-start').value;
+  const data_zakonczenia = document.getElementById('forma-edit-data-end').value;
+  
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + aktualneIdSzkolenia, {
+      method: 'PUT',
+      headers: getAuthHeader(),
+      body: JSON.stringify({
+        tytul,
+        opis,
+        limit_miejsc,
+        cena,
+        data_rozpoczecia,
+        data_zakonczenia,
+        status: 'aktywne'
+      })
+    });
+    
+    if (res.ok) {
+      alert('Szkolenie zaktualizowane!');
+      zamknijModal('modal-edytuj-szkolenie');
+      pobierzSzkolenia();
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function usunSzkolenie(szkolenie_id) {
+  if (!confirm('Czy na pewno chcesz usunąć to szkolenie?')) return;
+  
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + szkolenie_id, {
+      method: 'DELETE',
+      headers: getAuthHeader()
+    });
+    
+    if (res.ok) {
+      alert('Szkolenie usunięte!');
+      pobierzSzkolenia();
+    } else {
+      const error = await res.json();
+      alert('Błąd: ' + error.error);
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+// ============ SESJE ============
+async function pobierzSesjeDoBazardzania() {
+  try {
+    const res = await fetch(API_URL + '/szkolenia');
+    const szkolenia = await res.json();
+    
+    const lista = document.getElementById('lista-sesji');
+    lista.innerHTML = '';
+    
+    for (const szkolenie of szkolenia) {
+      const sesjeRes = await fetch(API_URL + '/sesje/' + szkolenie.id);
+      const sesje = await sesjeRes.json();
+      
+      const card = `
+        <div class="card">
+          <h3>${szkolenie.tytul}</h3>
+      `;
+      
+      if (sesje.length > 0) {
+        sesje.forEach(s => {
+          card += `
+            <div style="background-color: #e8f5e9; padding: 10px; margin: 5px 0; border-radius: 3px;">
+              <p><strong>Data:</strong> ${new Date(s.data_sesji).toLocaleDateString('pl-PL')}</p>
+              <p><strong>Lokalizacja:</strong> ${s.lokalizacja || 'Brak informacji'}</p>
+            </div>
+          `;
+        });
+      } else {
+        card += '<p>Brak sesji dla tego szkolenia.</p>';
+      }
+      
+      card += '</div>';
+      lista.innerHTML += card;
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function otworzModalDodajSesje() {
+  try {
+    const res = await fetch(API_URL + '/szkolenia');
+    const szkolenia = await res.json();
+    
+    const select = document.getElementById('forma-sesje-szkolenie');
+    select.innerHTML = '<option value="">-- Wybierz szkolenie --</option>';
+    
+    szkolenia.forEach(s => {
+      const option = document.createElement('option');
+      option.value = s.id;
+      option.textContent = s.tytul;
+      select.appendChild(option);
+    });
+    
+    document.getElementById('modal-dodaj-sesje').style.display = 'block';
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+async function dodajSesje() {
+  const szkolenie_id = document.getElementById('forma-sesje-szkolenie').value;
+  const data_sesji = document.getElementById('forma-sesje-data').value;
+  const lokalizacja = document.getElementById('forma-sesje-lokalizacja').value;
+  
+  if (!szkolenie_id || !data_sesji || !lokalizacja) {
+    alert('Wypełnij wszystkie pola');
+    return;
+  }
+  
+  try {
+    const res = await fetch(API_URL + '/sesje', {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify({ szkolenie_id, data_sesji, lokalizacja })
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+      alert('Sesja dodana pomyślnie!');
+      zamknijModal('modal-dodaj-sesje');
+      document.getElementById('forma-sesje-szkolenie').value = '';
+      document.getElementById('forma-sesje-data').value = '';
+      document.getElementById('forma-sesje-lokalizacja').value = '';
+      pobierzSesjeDoBazardzania();
+    } else {
+      alert('Błąd: ' + data.error);
+    }
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+// ============ MODAL ============
+function zamknijModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+window.onclick = function(event) {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  });
+}
+
+// Inicjalizacja
+document.addEventListener('DOMContentLoaded', function() {
+  pobierzSzkolenia();
+});
+</script>
+</body>
+</html>

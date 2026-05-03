@@ -56,9 +56,16 @@ app.get('/trenera', async (req, res) => {
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
-app.post('/dodajSzkolenie', async (req, res) => {
+app.post('/dodajSzkolenie', verifyToken, async (req, res) => {
   const { tytul, opis, trener } = req.body;
   try {
+    // Sprawdzenie uprawnień - tylko admin, organizator lub trener mogą dodawać szkolenia
+    // req.user.rola: 1=admin, 2=organizator, 3=trener, 4=uczestnik
+    const allowedRoles = [1, 2, 3]; // admin, organizator, trener
+    if (!allowedRoles.includes(req.user.rola)) {
+      return res.status(403).json({ error: 'Brak uprawnień do dodawania szkoleń' });
+    }
+
     const result = await pool.query(
       'INSERT INTO szkolenia (tytul, opis, trener_id) VALUES ($1, $2, $3) RETURNING id, tytul, opis',
       [tytul, opis, trener]
