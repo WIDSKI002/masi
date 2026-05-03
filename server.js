@@ -93,7 +93,7 @@ app.post('/login', async (req, res) => {
     const payload = {
       userId: user.id,
       email: login,
-      rola: r.rows[0].rola_id
+      rola: r.rows[0].id
     };
     
     const secret = process.env.JWT_SECRET || "key";
