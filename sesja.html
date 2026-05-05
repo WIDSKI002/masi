@@ -84,6 +84,13 @@
 const API_URL = "https://masi-3c4j.onrender.com";
 let aktualnaSesja = null;
 
+// Formatuj datę bez godziny (YYYY-MM-DD)
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString + 'T00:00:00');
+  return date.toISOString().split('T')[0];
+}
+
 // Pobierz token i sprawdź czy zalogowany
 const token = localStorage.getItem('token');
 if (!token) {
@@ -150,7 +157,7 @@ async function pobierzMojeSesje() {
           sesje.forEach(s => {
             card += `
               <div style="background-color: #e8f5e9; padding: 10px; margin: 5px 0; border-radius: 3px;">
-                <p><strong>Data:</strong> ${new Date(s.data_sesji).toLocaleDateString('pl-PL')}</p>
+                <p><strong>Data:</strong> ${formatDate(s.data_sesji)}</p>
                 <p><strong>Lokalizacja:</strong> ${s.lokalizacja || 'Brak informacji'}</p>
               </div>
             `;
@@ -199,7 +206,7 @@ async function pobierzSesjeDoBazardzania() {
         sesje.forEach(s => {
           card += `
             <div style="background-color: #fff3e0; padding: 10px; margin: 5px 0; border-radius: 3px;">
-              <p><strong>Data:</strong> ${new Date(s.data_sesji).toLocaleDateString('pl-PL')}</p>
+              <p><strong>Data:</strong> ${formatDate(s.data_sesji)}</p>
               <p><strong>Lokalizacja:</strong> ${s.lokalizacja || 'Brak'}</p>
               <button onclick="pokaZSzczegolySesji(${s.id}, '${szkolenie.tytul}')" class="btn-secondary">Zarządzaj obecnością</button>
             </div>

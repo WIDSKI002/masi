@@ -57,6 +57,13 @@ const API_URL = "https://masi-3c4j.onrender.com";
 let aktualneSzkolenie = null;
 let wszystkieSzkolenia = [];
 
+// Formatuj datę bez godziny (YYYY-MM-DD)
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString + 'T00:00:00');
+  return date.toISOString().split('T')[0];
+}
+
 // Pobierz token i sprawdź czy zalogowany
 const token = localStorage.getItem('token');
 if (!token) {
@@ -135,8 +142,8 @@ async function pokazSzczegoly(szkolenie_id) {
     document.getElementById('modal-opis').textContent = szkolenie.opis || 'Brak opisu';
     document.getElementById('modal-cena').textContent = szkolenie.cena || 'Brak';
     document.getElementById('modal-limit').textContent = szkolenie.limit_miejsc || 'Brak';
-    document.getElementById('modal-data-start').textContent = szkolenie.data_rozpoczecia || 'Nie ustalona';
-    document.getElementById('modal-data-end').textContent = szkolenie.data_zakonczenia || 'Nie ustalona';
+    document.getElementById('modal-data-start').textContent = formatDate(szkolenie.data_rozpoczecia) || 'Nie ustalona';
+    document.getElementById('modal-data-end').textContent = formatDate(szkolenie.data_zakonczenia) || 'Nie ustalona';
     document.getElementById('modal-status').textContent = szkolenie.status || 'Aktywne';
     
     // Wyświetl program

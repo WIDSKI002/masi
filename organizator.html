@@ -153,6 +153,13 @@ const API_URL = "https://masi-3c4j.onrender.com";
 let aktualneIdSzkolenia = null;
 let wszyscySzkolenia = [];
 
+// Formatuj datę bez godziny (YYYY-MM-DD)
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString + 'T00:00:00');
+  return date.toISOString().split('T')[0];
+}
+
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = "index.html";
@@ -292,8 +299,8 @@ async function otworzModalEdytuj(szkolenie_id) {
     document.getElementById('forma-edit-opis').value = szkolenie.opis || '';
     document.getElementById('forma-edit-limit').value = szkolenie.limit_miejsc || '';
     document.getElementById('forma-edit-cena').value = szkolenie.cena || '';
-    document.getElementById('forma-edit-data-start').value = szkolenie.data_rozpoczecia || '';
-    document.getElementById('forma-edit-data-end').value = szkolenie.data_zakonczenia || '';
+    document.getElementById('forma-edit-data-start').value = formatDate(szkolenie.data_rozpoczecia);
+    document.getElementById('forma-edit-data-end').value = formatDate(szkolenie.data_zakonczenia);
     
     document.getElementById('modal-edytuj-szkolenie').style.display = 'block';
   } catch (err) {
@@ -377,7 +384,7 @@ async function pobierzSesjeDoBazardzania() {
         sesje.forEach(s => {
           card += `
             <div style="background-color: #e8f5e9; padding: 10px; margin: 5px 0; border-radius: 3px;">
-              <p><strong>Data:</strong> ${new Date(s.data_sesji).toLocaleDateString('pl-PL')}</p>
+              <p><strong>Data:</strong> ${formatDate(s.data_sesji)}</p>
               <p><strong>Lokalizacja:</strong> ${s.lokalizacja || 'Brak informacji'}</p>
             </div>
           `;

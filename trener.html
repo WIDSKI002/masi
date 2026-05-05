@@ -172,6 +172,13 @@ let aktualneIdSzkolenia = null;
 let aktualnyIdUczestnika = null;
 let aktualnyIdRaportu = null;
 
+// Formatuj datę bez godziny (YYYY-MM-DD)
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString + 'T00:00:00');
+  return date.toISOString().split('T')[0];
+}
+
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = "index.html";
@@ -302,8 +309,8 @@ async function otworzModalEdytuj(szkolenie_id) {
     document.getElementById('forma-edit-opis').value = szkolenie.opis || '';
     document.getElementById('forma-edit-limit').value = szkolenie.limit_miejsc || '';
     document.getElementById('forma-edit-cena').value = szkolenie.cena || '';
-    document.getElementById('forma-edit-data-start').value = szkolenie.data_rozpoczecia || '';
-    document.getElementById('forma-edit-data-end').value = szkolenie.data_zakonczenia || '';
+    document.getElementById('forma-edit-data-start').value = formatDate(szkolenie.data_rozpoczecia);
+    document.getElementById('forma-edit-data-end').value = formatDate(szkolenie.data_zakonczenia);
     document.getElementById('forma-edit-status').value = szkolenie.status || '';
     
     document.getElementById('modal-edytuj-szkolenie').style.display = 'block';
