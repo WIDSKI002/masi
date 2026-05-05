@@ -321,14 +321,19 @@ app.get('/sesje/:szkolenie_id', async (req, res) => {
   }
 });
 
-// Dodaj sesję szkolenia (trener/admin)
+// Dodaj sesję szkolenia (trener/admin/organizator)
 app.post('/sesje', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id, data_sesji, lokalizacja } = req.body;
     
-    // Sprawdzenie uprawnień
+    // Sprawdzenie uprawnień - trener, admin lub organizator
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
-    if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
+    if (schResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Szkolenie nie znalezione' });
+    }
+    
+    const allowedRoles = [1, 2, 3]; // admin, organizator, trener
+    if (!allowedRoles.includes(req.user.rola) && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnień' });
     }
     

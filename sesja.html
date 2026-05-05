@@ -302,7 +302,7 @@ async function otworzModalDodajSesje() {
 
 // Dodaj sesję
 async function dodajSesje() {
-  const szkolenie_id = document.getElementById('forma-szkolenie').value;
+  const szkolenie_id = parseInt(document.getElementById('forma-szkolenie').value);
   const data_sesji = document.getElementById('forma-data').value;
   const lokalizacja = document.getElementById('forma-lokalizacja').value;
   
@@ -325,9 +325,9 @@ async function dodajSesje() {
       document.getElementById('forma-szkolenie').value = '';
       document.getElementById('forma-data').value = '';
       document.getElementById('forma-lokalizacja').value = '';
-      pobierzSesjeDoBazardzania();
+      await pokazTabZarzadzajSesje();
     } else {
-      alert('Błąd: ' + data.error);
+      alert('Błąd: ' + (data.error || 'Nie udało się dodać sesji'));
     }
   } catch (err) {
     alert('Błąd: ' + err);
