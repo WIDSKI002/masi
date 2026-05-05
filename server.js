@@ -44,6 +44,7 @@ app.get('/uzytkownicy', async (req, res) => {
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
+
 app.get('/trenera', async (req, res) => {
   try {
     const result = await pool.query(
@@ -56,19 +57,18 @@ app.get('/trenera', async (req, res) => {
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
+
 app.post('/dodajSzkolenie', verifyToken, async (req, res) => {
-  const { tytul, opis, trener } = req.body;
+  const { tytul, opis, limit_miejsc, cena, data_rozpoczecia, data_zakonczenia, status } = req.body;
   try {
-    // Sprawdzenie uprawnień - tylko admin, organizator lub trener mogą dodawać szkolenia
-    // req.user.rola: 1=admin, 2=organizator, 3=trener, 4=uczestnik
     const allowedRoles = [1, 2, 3]; // admin, organizator, trener
     if (!allowedRoles.includes(req.user.rola)) {
       return res.status(403).json({ error: 'Brak uprawnień do dodawania szkoleń' });
     }
 
     const result = await pool.query(
-      'INSERT INTO szkolenia (tytul, opis, trener_id) VALUES ($1, $2, $3) RETURNING id, tytul, opis',
-      [tytul, opis, trener]
+      'INSERT INTO szkolenia (tytul, opis, trener_id, limit_miejsc, cena, data_rozpoczecia, data_zakonczenia, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, tytul, opis, limit_miejsc, cena, data_rozpoczecia, data_zakonczenia, status',
+      [tytul, opis, req.user.userId, limit_miejsc, cena, data_rozpoczecia, data_zakonczenia, status || 'planowane']
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -97,7 +97,6 @@ app.post('/login', async (req, res) => {
     };
     
     const secret = process.env.JWT_SECRET || "key";
-    
     const token = jwt.sign(payload, secret, {
       expiresIn: "1h"
     });
@@ -211,12 +210,11 @@ app.put('/szkolenia/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Usuń szkolenie (admin lub trener)
+
 app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Sprawdzenie uprawnień
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [id]);
     if (schResult.rows.length === 0) {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
@@ -234,14 +232,11 @@ app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ============== ZAPISY NA SZKOLENIA ==============
-// Zapisz się na szkolenie
 app.post('/zapisy', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id } = req.body;
     const uzytkownik_id = req.user.userId;
     
-    // Sprawdź czy szkolenie istnieje i czy są wolne miejsca
     const schResult = await pool.query(
       'SELECT limit_miejsc FROM szkolenia WHERE id = $1',
       [szkolenie_id]
