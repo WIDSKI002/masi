@@ -219,7 +219,7 @@ app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
       'INSERT INTO zapisy (uzytkownik_id, szkolenie_id, status) VALUES ($1, $2, $3) RETURNING *',
       [uzytkownik_id, szkolenie_id, 'aktywny']
       [szkolenie_id]
-    );
+  
     res.json(result.rows);
   } catch (err) {
     console.error(err);
