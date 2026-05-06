@@ -284,6 +284,7 @@ function wyswietlSzkolenia(szkolenia) {
         <td>${s.cena || 'Brak'} zł</td>
         <td>
           <button onclick="alert('Edycja szkoleń jest dostępna dla trenerów')" class="btn-secondary" style="font-size:12px; padding: 5px 10px;">Szczegóły</button>
+          <button onclick="usunSzkolenie(${s.id})" class="btn-danger" style="font-size:12px; padding: 5px 10px;">Usun</button>
         </td>
       </tr>
     `;
@@ -291,6 +292,34 @@ function wyswietlSzkolenia(szkolenia) {
   });
 }
 
+async function usunSzkolenie(szkolenieId) {
+  const szkolenie = wszystkieSzkolenia.find(s => s.id === szkolenieId);
+  const nazwa = szkolenie ? szkolenie.tytul : 'wybrane szkolenie';
+
+  if (!confirm(`Czy na pewno usunac szkolenie "${nazwa}"? Tej operacji nie mozna cofnac.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch(API_URL + '/szkolenia/' + szkolenieId, {
+      method: 'DELETE',
+      headers: getAuthHeader()
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.error || 'Nie udalo sie usunac szkolenia');
+      return;
+    }
+
+    alert(data.message || 'Szkolenie usuniete');
+    await pobierzSzkolenia();
+    await pobierzStatystyki();
+  } catch (err) {
+    alert('Blad: ' + err);
+  }
+}
 // ============ RAPORTY ============
 function generujRaport() {
   const raportContent = document.getElementById('raport-content');

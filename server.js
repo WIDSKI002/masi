@@ -29,7 +29,7 @@ app.get('/api/role', async (req, res) => {
       res.json(result.rows);
   } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Błąd serwera' });
+      res.status(500).json({ error: 'Blad serwera' });
   }
 });
 app.get('/uzytkownicy', async (req, res) => {
@@ -41,7 +41,7 @@ app.get('/uzytkownicy', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -54,7 +54,7 @@ app.get('/trenera', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -63,7 +63,7 @@ app.post('/dodajSzkolenie', verifyToken, async (req, res) => {
   try {
     const allowedRoles = [1, 2, 3]; // admin, organizator, trener
     if (!allowedRoles.includes(req.user.rola)) {
-      return res.status(403).json({ error: 'Brak uprawnień do dodawania szkoleń' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
 
     const result = await pool.query(
@@ -73,7 +73,7 @@ app.post('/dodajSzkolenie', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -121,7 +121,7 @@ app.post('/rejestracja', async (req, res) => {
     res.json({ id: userResult.rows[0].id, message: 'Rejestracja pomyślna' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -140,7 +140,7 @@ function verifyToken(req, res, next) {
     req.user = decoded; 
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Nieprawidłowy token' });
+    return res.status(403).json({ error: 'Brak uprawnien' });
   }
 }
 
@@ -154,7 +154,7 @@ app.get('/szkolenia', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -179,7 +179,7 @@ app.get('/szkolenia/:id', async (req, res) => {
     res.json({ ...result.rows[0], program: program.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -196,7 +196,7 @@ app.put('/szkolenia/:id', verifyToken, async (req, res) => {
     }
     
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
 
     const result = await pool.query(
@@ -206,26 +206,53 @@ app.put('/szkolenia/:id', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
 
 app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
-    
-    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [id]);
-      'INSERT INTO zapisy (uzytkownik_id, szkolenie_id, status) VALUES ($1, $2, $3) RETURNING *',
-      [uzytkownik_id, szkolenie_id, 'aktywny']
-      [szkolenie_id]
-  
-    res.json(result.rows);
+
+    if (req.user.rola !== 1) {
+      return res.status(403).json({ error: 'Brak uprawnien' });
+    }
+
+    await client.query('BEGIN');
+
+    const schResult = await client.query('SELECT id, tytul FROM szkolenia WHERE id = $1', [id]);
+    if (schResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Szkolenie nie znalezione' });
+    }
+
+    await client.query(
+      'DELETE FROM obecnosci WHERE sesja_id IN (SELECT id FROM sesje_szkolen WHERE szkolenie_id = $1)',
+      [id]
+    );
+    await client.query('DELETE FROM sesje_szkolen WHERE szkolenie_id = $1', [id]);
+    await client.query('DELETE FROM program_szkolenia WHERE szkolenie_id = $1', [id]);
+    await client.query('DELETE FROM certyfikaty WHERE szkolenie_id = $1', [id]);
+    await client.query(
+      'DELETE FROM platnosci WHERE zapis_id IN (SELECT id FROM zapisy WHERE szkolenie_id = $1)',
+      [id]
+    );
+    await client.query('DELETE FROM zapisy WHERE szkolenie_id = $1', [id]);
+    const result = await client.query('DELETE FROM szkolenia WHERE id = $1 RETURNING id, tytul', [id]);
+
+    await client.query('COMMIT');
+    res.json({ message: 'Szkolenie usuniete', szkolenie: result.rows[0] });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
+  } finally {
+    client.release();
   }
 });
+
 
 // Dodaj sesję szkolenia (trener/admin/organizator)
 app.post('/sesje', verifyToken, async (req, res) => {
@@ -240,7 +267,7 @@ app.post('/sesje', verifyToken, async (req, res) => {
     
     const allowedRoles = [1, 2, 3]; // admin, organizator, trener
     if (!allowedRoles.includes(req.user.rola) && req.user.userId !== schResult.rows[0].trener_id) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -250,7 +277,7 @@ app.post('/sesje', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -265,7 +292,7 @@ app.post('/obecnosci', verifyToken, async (req, res) => {
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [sesjaResult.rows[0].szkolenie_id]);
     
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     // Sprawdź czy rekord istnieje
@@ -289,7 +316,7 @@ app.post('/obecnosci', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -305,7 +332,7 @@ app.get('/sesje/:sesja_id/obecnosci', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -318,7 +345,7 @@ app.post('/certyfikaty', verifyToken, async (req, res) => {
     // Sprawdzenie uprawnień - tylko admin/trener
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -333,7 +360,7 @@ app.post('/certyfikaty', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -348,7 +375,7 @@ app.get('/moje-certyfikaty', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -361,7 +388,7 @@ app.get('/platnosci/:zapis_id', verifyToken, async (req, res) => {
     // Sprawdzenie uprawnień
     const zapis = await pool.query('SELECT uzytkownik_id FROM zapisy WHERE id = $1', [zapis_id]);
     if (zapis.rows.length === 0 || zapis.rows[0].uzytkownik_id !== req.user.userId) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -371,7 +398,7 @@ app.get('/platnosci/:zapis_id', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -383,7 +410,7 @@ app.post('/platnosci', verifyToken, async (req, res) => {
     // Sprawdzenie uprawnień
     const zapis = await pool.query('SELECT uzytkownik_id FROM zapisy WHERE id = $1', [zapis_id]);
     if (zapis.rows.length === 0 || zapis.rows[0].uzytkownik_id !== req.user.userId) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -393,7 +420,7 @@ app.post('/platnosci', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -409,7 +436,7 @@ app.get('/powiadomienia', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -420,7 +447,7 @@ app.post('/powiadomienia', verifyToken, async (req, res) => {
     
     // Tylko admin (rola 1) może wysyłać powiadomienia
     if (req.user.rola !== 1) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -430,7 +457,7 @@ app.post('/powiadomienia', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -447,7 +474,7 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
     }
     
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     // Pobierz uczestników
@@ -489,7 +516,7 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -497,7 +524,7 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
 app.get('/statystyki', verifyToken, async (req, res) => {
   try {
     if (req.user.rola !== 1) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const liczbaUzytkownikow = await pool.query('SELECT COUNT(*) as count FROM uzytkownicy');
@@ -513,7 +540,7 @@ app.get('/statystyki', verifyToken, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -521,7 +548,7 @@ app.get('/statystyki', verifyToken, async (req, res) => {
 app.get('/admin/uzytkownicy', verifyToken, async (req, res) => {
   try {
     if (req.user.rola !== 1) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -530,7 +557,7 @@ app.get('/admin/uzytkownicy', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -538,7 +565,7 @@ app.get('/admin/uzytkownicy', verifyToken, async (req, res) => {
 app.put('/admin/uzytkownicy/:id/rola', verifyToken, async (req, res) => {
   try {
     if (req.user.rola !== 1) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const { id } = req.params;
@@ -555,7 +582,7 @@ app.put('/admin/uzytkownicy/:id/rola', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -567,7 +594,7 @@ app.post('/program-szkolenia', verifyToken, async (req, res) => {
     // Sprawdzenie uprawnień
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
-      return res.status(403).json({ error: 'Brak uprawnień' });
+      return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
@@ -577,7 +604,7 @@ app.post('/program-szkolenia', verifyToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
@@ -591,7 +618,7 @@ app.get('/moje-szkolenia', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Błąd serwera' });
+    res.status(500).json({ error: 'Blad serwera' });
   }
 });
 
