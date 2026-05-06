@@ -214,11 +214,8 @@ app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [id]);
-      'INSERT INTO zapisy (uzytkownik_id, szkolenie_id, status) VALUES ($1, $2, $3) RETURNING *',
-      [uzytkownik_id, szkolenie_id, 'aktywny']
-      [szkolenie_id]
-  
+    const result = await pool.query(' DELETE FROM  szkolenia WHERE id = $1 RETURNING *', [id]);
+ 
     res.json(result.rows);
   } catch (err) {
     console.error(err);
