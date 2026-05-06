@@ -1,3 +1,51 @@
+<script>
+// --- Terminy szkolenia (dodawanie) ---
+function dodajTerminPole() {
+  const lista = document.getElementById('terminy-lista');
+  const idx = lista.children.length;
+  const div = document.createElement('div');
+  div.className = 'termin-row';
+  div.style.marginBottom = '6px';
+  div.innerHTML = `
+    <select class="termin-dzien" style="margin-right:8px;">
+      <option value="">Dzień tygodnia</option>
+      <option>Poniedziałek</option>
+      <option>Wtorek</option>
+      <option>Środa</option>
+      <option>Czwartek</option>
+      <option>Piątek</option>
+      <option>Sobota</option>
+      <option>Niedziela</option>
+    </select>
+    <input type="time" class="termin-godzina" style="margin-right:8px;">
+    <button type="button" onclick="this.parentNode.remove()" class="btn-danger" style="padding:2px 8px;">Usuń</button>
+  `;
+  lista.appendChild(div);
+}
+
+// --- Terminy szkolenia (edycja) ---
+function dodajTerminEditPole(dzien = '', godzina = '') {
+  const lista = document.getElementById('terminy-edit-lista');
+  const div = document.createElement('div');
+  div.className = 'termin-row';
+  div.style.marginBottom = '6px';
+  div.innerHTML = `
+    <select class="termin-dzien" style="margin-right:8px;">
+      <option value="">Dzień tygodnia</option>
+      <option${dzien==='Poniedziałek'?' selected':''}>Poniedziałek</option>
+      <option${dzien==='Wtorek'?' selected':''}>Wtorek</option>
+      <option${dzien==='Środa'?' selected':''}>Środa</option>
+      <option${dzien==='Czwartek'?' selected':''}>Czwartek</option>
+      <option${dzien==='Piątek'?' selected':''}>Piątek</option>
+      <option${dzien==='Sobota'?' selected':''}>Sobota</option>
+      <option${dzien==='Niedziela'?' selected':''}>Niedziela</option>
+    </select>
+    <input type="time" class="termin-godzina" value="${godzina}" style="margin-right:8px;">
+    <button type="button" onclick="this.parentNode.remove()" class="btn-danger" style="padding:2px 8px;">Usuń</button>
+  `;
+  lista.appendChild(div);
+}
+</script>
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -45,37 +93,36 @@
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-dodaj-szkolenie')">&times;</span>
     <h2>Dodaj nowe szkolenie</h2>
-    
     <div class="form-group">
       <label>Tytuł:</label>
       <input type="text" id="forma-tytul" placeholder="Tytuł szkolenia" required>
     </div>
-    
     <div class="form-group">
       <label>Opis:</label>
       <textarea id="forma-opis" placeholder="Opis szkolenia"></textarea>
     </div>
-    
     <div class="form-group">
       <label>Limit miejsc:</label>
       <input type="number" id="forma-limit" placeholder="Limit miejsc" min="1">
     </div>
-    
     <div class="form-group">
       <label>Cena:</label>
       <input type="number" id="forma-cena" placeholder="Cena w zł" step="0.01" min="0">
     </div>
-    
     <div class="form-group">
       <label>Data rozpoczęcia:</label>
       <input type="date" id="forma-data-start">
     </div>
-    
     <div class="form-group">
       <label>Data zakończenia:</label>
       <input type="date" id="forma-data-end">
     </div>
-    
+    <!-- Tutaj będą terminy -->
+    <div class="form-group">
+      <label>Terminy (dni i godziny):</label>
+      <div id="terminy-lista"></div>
+      <button type="button" onclick="dodajTerminPole()" class="btn-secondary" style="margin-top:8px;">Dodaj termin</button>
+    </div>
     <button onclick="dodajSzkolenie()" class="btn-primary">Dodaj szkolenie</button>
   </div>
 </div>
@@ -85,37 +132,30 @@
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-edytuj-szkolenie')">&times;</span>
     <h2>Edytuj szkolenie</h2>
-    
     <div class="form-group">
       <label>Tytuł:</label>
       <input type="text" id="forma-edit-tytul" placeholder="Tytuł szkolenia" required>
     </div>
-    
     <div class="form-group">
       <label>Opis:</label>
       <textarea id="forma-edit-opis" placeholder="Opis szkolenia"></textarea>
     </div>
-    
     <div class="form-group">
       <label>Limit miejsc:</label>
       <input type="number" id="forma-edit-limit" placeholder="Limit miejsc" min="1">
     </div>
-    
     <div class="form-group">
       <label>Cena:</label>
       <input type="number" id="forma-edit-cena" placeholder="Cena w zł" step="0.01" min="0">
     </div>
-    
     <div class="form-group">
       <label>Data rozpoczęcia:</label>
       <input type="date" id="forma-edit-data-start">
     </div>
-    
     <div class="form-group">
       <label>Data zakończenia:</label>
       <input type="date" id="forma-edit-data-end">
     </div>
-    
     <div class="form-group">
       <label>Status:</label>
       <select id="forma-edit-status">
@@ -125,7 +165,12 @@
         <option value="archiwalne">Archiwalne</option>
       </select>
     </div>
-    
+    <!-- Tutaj będą terminy -->
+    <div class="form-group">
+      <label>Terminy (dni i godziny):</label>
+      <div id="terminy-edit-lista"></div>
+      <button type="button" onclick="dodajTerminEditPole()" class="btn-secondary" style="margin-top:8px;">Dodaj termin</button>
+    </div>
     <button onclick="aktualizujSzkolenie()" class="btn-primary">Aktualizuj szkolenie</button>
   </div>
 </div>
@@ -154,7 +199,6 @@
   </div>
 </div>
 
-<!-- MODAL: Wydaj certyfikat -->
 <div id="modal-certyfikat" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-certyfikat')">&times;</span>
@@ -175,8 +219,17 @@ let aktualnyIdRaportu = null;
 // Formatuj datę bez godziny (YYYY-MM-DD)
 function formatDate(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString + 'T00:00:00');
-  return date.toISOString().split('T')[0];
+  // Jeśli data już ma format YYYY-MM-DD, zwróć ją jako jest
+  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString;
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return '';
+  }
 }
 
 const token = localStorage.getItem('token');
@@ -224,28 +277,34 @@ async function pobierzMojeSzkolenia() {
   }
 }
 
-function wyswietlMojeSzkolenia(szkolenia) {
+async function wyswietlMojeSzkolenia(szkolenia) {
   const lista = document.getElementById('lista-moich-szkolen');
   lista.innerHTML = '';
-  
   if (szkolenia.length === 0) {
     lista.innerHTML = '<p>Nie masz żadnych szkoleń.</p>';
     return;
   }
-  
-  szkolenia.forEach(s => {
+  for (const s of szkolenia) {
+    // Pobierz terminy dla szkolenia
+    let terminy = [];
+    try {
+      const res = await fetch(`${API_URL}/terminy/${s.id}`, { headers: getAuthHeader() });
+      if (res.ok) terminy = await res.json();
+    } catch {}
+    let terminyTxt = terminy.length ? terminy.map(t => `${t.dzien_tygodnia} ${t.godzina.slice(0,5)}`).join(', ') : 'Brak';
     const card = `
       <div class="card">
         <h3>${s.tytul}</h3>
         <p><strong>Opis:</strong> ${s.opis || 'Brak'}</p>
         <p><strong>Status:</strong> ${s.status || 'Aktywne'} | <strong>Limit:</strong> ${s.limit_miejsc || 'Brak'} | <strong>Cena:</strong> ${s.cena || 'Brak'} zł</p>
         <p><strong>Harmonogram:</strong> ${s.data_rozpoczecia || 'Brak'} - ${s.data_zakonczenia || 'Brak'}</p>
+        <p><strong>Terminy:</strong> ${terminyTxt}</p>
         <button onclick="otworzModalEdytuj(${s.id})" class="btn-secondary">Edytuj</button>
         <button onclick="usunSzkolenie(${s.id})" class="btn-danger">Usuń</button>
       </div>
     `;
     lista.innerHTML += card;
-  });
+  }
 }
 
 function otworzModalDodajSzkolenie() {
@@ -437,7 +496,6 @@ async function pokazRaport(szkolenie_id, tytul) {
   }
 }
 
-// ============ CERTYFIKATY ============
 function otworzModalWydajCert(uczestnik_id, nazwa) {
   aktualnyIdUczestnika = uczestnik_id;
   document.getElementById('cert-info').textContent = 'Wydaj certyfikat dla: ' + nazwa;
@@ -470,7 +528,6 @@ async function pobierzCertyfikaty() {
   lista.innerHTML = '<p>Funkcjonalność w przygotowaniu...</p>';
 }
 
-// ============ MODAL ============
 function zamknijModal(modalId) {
   document.getElementById(modalId).style.display = 'none';
 }
@@ -484,7 +541,7 @@ window.onclick = function(event) {
   });
 }
 
-// Inicjalizacja
+
 document.addEventListener('DOMContentLoaded', function() {
   pobierzMojeSzkolenia();
 });

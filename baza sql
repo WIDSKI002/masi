@@ -1,6 +1,4 @@
--- ======================
--- UŻYTKOWNICY
--- ======================
+
 CREATE TABLE uzytkownicy (
     id SERIAL PRIMARY KEY,
     imie VARCHAR(100) NOT NULL,
@@ -10,9 +8,7 @@ CREATE TABLE uzytkownicy (
     data_utworzenia TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ======================
--- ROLE
--- ======================
+
 CREATE TABLE role (
     id SERIAL PRIMARY KEY,
     nazwa VARCHAR(50) UNIQUE NOT NULL
@@ -26,9 +22,7 @@ CREATE TABLE uzytkownik_role (
     FOREIGN KEY (rola_id) REFERENCES role(id) ON DELETE CASCADE
 );
 
--- ======================
--- SZKOLENIA
--- ======================
+
 CREATE TABLE szkolenia (
     id SERIAL PRIMARY KEY,
     tytul VARCHAR(200) NOT NULL,
@@ -42,32 +36,7 @@ CREATE TABLE szkolenia (
     FOREIGN KEY (trener_id) REFERENCES uzytkownicy(id) ON DELETE SET NULL
 );
 
--- ======================
--- PROGRAM SZKOLENIA
--- ======================
-CREATE TABLE program_szkolenia (
-    id SERIAL PRIMARY KEY,
-    szkolenie_id INT,
-    tytul VARCHAR(200),
-    opis TEXT,
-    kolejnosc INT,
-    FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
-);
 
--- ======================
--- SESJE (harmonogram)
--- ======================
-CREATE TABLE sesje_szkolen (
-    id SERIAL PRIMARY KEY,
-    szkolenie_id INT NOT NULL,
-    data_sesji DATE NOT NULL,
-    lokalizacja VARCHAR(200),
-    FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
-);
-
--- ======================
--- ZAPISY
--- ======================
 CREATE TABLE zapisy (
     id SERIAL PRIMARY KEY,
     uzytkownik_id INT NOT NULL,
@@ -78,9 +47,8 @@ CREATE TABLE zapisy (
     FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
 );
 
--- ======================
--- PŁATNOŚCI
--- ======================
+
+
 CREATE TABLE platnosci (
     id SERIAL PRIMARY KEY,
     zapis_id INT NOT NULL,
@@ -90,21 +58,18 @@ CREATE TABLE platnosci (
     FOREIGN KEY (zapis_id) REFERENCES zapisy(id) ON DELETE CASCADE
 );
 
--- ======================
--- OBECNOŚĆ
--- ======================
+
+
 CREATE TABLE obecnosci (
     id SERIAL PRIMARY KEY,
     uzytkownik_id INT NOT NULL,
-    sesja_id INT NOT NULL,
+    termin_id INT NOT NULL,
     obecny BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (uzytkownik_id) REFERENCES uzytkownicy(id) ON DELETE CASCADE,
-    FOREIGN KEY (sesja_id) REFERENCES sesje_szkolen(id) ON DELETE CASCADE
+    FOREIGN KEY (termin_id) REFERENCES terminy_szkolen(id) ON DELETE CASCADE
 );
 
--- ======================
--- CERTYFIKATY
--- ======================
+
 CREATE TABLE certyfikaty (
     id SERIAL PRIMARY KEY,
     uzytkownik_id INT NOT NULL,
@@ -114,9 +79,7 @@ CREATE TABLE certyfikaty (
     FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
 );
 
--- ======================
--- POWIADOMIENIA
--- ======================
+
 CREATE TABLE powiadomienia (
     id SERIAL PRIMARY KEY,
     uzytkownik_id INT,
@@ -130,6 +93,12 @@ CREATE TABLE powiadomienia (
 
 INSERT INTO role (nazwa) VALUES
 ('Administrator'),
-('Organizator'),
 ('Trener'),
 ('Uczestnik');
+
+CREATE TABLE terminy_szkolen (
+    id SERIAL PRIMARY KEY,
+    szkolenie_id INT NOT NULL,
+    termin TIMESTAMP NOT NULL,
+    FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
+);

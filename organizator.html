@@ -1,109 +1,3 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <title>Panel Organizatora</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>Panel Organizatora</h1>
-    <div>
-      <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
-    </div>
-  </div>
-
-  <div class="tab-buttons">
-    <button onclick="pokazTab('tab-szkolenia')" class="btn-primary">Szkolenia</button>
-    <button onclick="pokazTab('tab-sesje')" class="btn-secondary">Sesje</button>
-  </div>
-
-  <!-- TAB: Szkolenia -->
-  <div id="tab-szkolenia" style="display: block;">
-    <h2>Moje szkolenia</h2>
-    <button onclick="otworzModalDodajSzkolenie()" class="btn-primary" style="margin-bottom: 15px;">Dodaj nowe szkolenie</button>
-    <div id="lista-szkolen"></div>
-  </div>
-
-  <!-- TAB: Sesje -->
-  <div id="tab-sesje" style="display: none;">
-    <h2>Zarządzanie sesjami</h2>
-    <button onclick="otworzModalDodajSesje()" class="btn-primary" style="margin-bottom: 15px;">Dodaj nową sesję</button>
-    <div id="lista-sesji"></div>
-  </div>
-</div>
-
-<!-- MODAL: Dodaj szkolenie -->
-<div id="modal-dodaj-szkolenie" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="zamknijModal('modal-dodaj-szkolenie')">&times;</span>
-    <h2>Dodaj nowe szkolenie</h2>
-    
-    <div class="form-group">
-      <label>Tytuł:</label>
-      <input type="text" id="forma-tytul" placeholder="Tytuł szkolenia" required>
-    </div>
-    
-    <div class="form-group">
-      <label>Opis:</label>
-      <textarea id="forma-opis" placeholder="Opis szkolenia"></textarea>
-    </div>
-    
-    <div class="form-group">
-      <label>Trener:</label>
-      <select id="forma-trener" required>
-        <option value="">-- Wybierz trenera --</option>
-      </select>
-    </div>
-    
-    <div class="form-group">
-      <label>Limit miejsc:</label>
-      <input type="number" id="forma-limit" placeholder="Limit miejsc" min="1">
-    </div>
-    
-    <div class="form-group">
-      <label>Cena:</label>
-      <input type="number" id="forma-cena" placeholder="Cena w zł" step="0.01" min="0">
-    </div>
-    
-    <div class="form-group">
-      <label>Data rozpoczęcia:</label>
-      <input type="date" id="forma-data-start">
-    </div>
-    
-    <div class="form-group">
-      <label>Data zakończenia:</label>
-      <input type="date" id="forma-data-end">
-    </div>
-    
-    <button onclick="dodajSzkolenie()" class="btn-primary">Dodaj szkolenie</button>
-  </div>
-</div>
-
-<!-- MODAL: Edytuj szkolenie -->
-<div id="modal-edytuj-szkolenie" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="zamknijModal('modal-edytuj-szkolenie')">&times;</span>
-    <h2>Edytuj szkolenie</h2>
-    
-    <div class="form-group">
-      <label>Tytuł:</label>
-      <input type="text" id="forma-edit-tytul" placeholder="Tytuł szkolenia" required>
-    </div>
-    
-    <div class="form-group">
-      <label>Opis:</label>
-      <textarea id="forma-edit-opis" placeholder="Opis szkolenia"></textarea>
-    </div>
-    
-    <div class="form-group">
-      <label>Limit miejsc:</label>
-      <input type="number" id="forma-edit-limit" placeholder="Limit miejsc" min="1">
-    </div>
-    
-    <div class="form-group">
-      <label>Cena:</label>
       <input type="number" id="forma-edit-cena" placeholder="Cena w zł" step="0.01" min="0">
     </div>
     
@@ -156,8 +50,17 @@ let wszyscySzkolenia = [];
 // Formatuj datę bez godziny (YYYY-MM-DD)
 function formatDate(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString + 'T00:00:00');
-  return date.toISOString().split('T')[0];
+  // Jeśli data już ma format YYYY-MM-DD, zwróć ją jako jest
+  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString;
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return '';
+  }
 }
 
 const token = localStorage.getItem('token');
@@ -375,7 +278,7 @@ async function pobierzSesjeDoBazardzania() {
       const sesjeRes = await fetch(API_URL + '/sesje/' + szkolenie.id);
       const sesje = await sesjeRes.json();
       
-      const card = `
+      let card = `
         <div class="card">
           <h3>${szkolenie.tytul}</h3>
       `;

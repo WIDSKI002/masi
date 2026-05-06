@@ -60,8 +60,17 @@ let wszystkieSzkolenia = [];
 // Formatuj datę bez godziny (YYYY-MM-DD)
 function formatDate(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString + 'T00:00:00');
-  return date.toISOString().split('T')[0];
+  // Jeśli data już ma format YYYY-MM-DD, zwróć ją jako jest
+  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString;
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return '';
+  }
 }
 
 // Pobierz token i sprawdź czy zalogowany
@@ -226,7 +235,6 @@ function wyswietlMojeZapisy(zapisy) {
   });
 }
 
-// Anuluj zapis
 async function anulujZapis(zapis_id) {
   if (!confirm('Czy na pewno chcesz anulować zapis?')) return;
   
@@ -248,7 +256,6 @@ async function anulujZapis(zapis_id) {
   }
 }
 
-// Szukaj szkolenia
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('szukaj').addEventListener('keyup', function() {
     const szukaj = this.value.toLowerCase();
@@ -262,12 +269,10 @@ document.addEventListener('DOMContentLoaded', function() {
   pobierzSzkolenia();
 });
 
-// Zamknij modal
 function zamknijModal(modalId) {
   document.getElementById(modalId).style.display = 'none';
 }
 
-// Zamknij modal po kliknięciu poza nim
 window.onclick = function(event) {
   const modal = document.getElementById('modal-szczegoly');
   if (event.target == modal) {

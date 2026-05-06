@@ -10,26 +10,16 @@
   <h1>Sesje Szkoleniowe</h1>
   
   <div class="tab-buttons">
-    <button onclick="pokazTabMojeSesje()" class="btn-primary">Moje Sesje</button>
-    <button onclick="pokazTabZarzadzajSesje()" class="btn-secondary">Zarządzaj Sesjami</button>
+    <button onclick="pokazTabMojeSesje()" class="btn-primary">Moje Terminy</button>
     <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
   </div>
 
-  <!-- TAB: Moje Sesje -->
   <div id="tab-moje-sesje" style="display: block;">
-    <h2>Moje sesje szkoleniowe</h2>
+    <h2>Moje terminy szkolenia</h2>
     <div id="lista-moich-sesji"></div>
-  </div>
-
-  <!-- TAB: Zarządzaj Sesjami -->
-  <div id="tab-zarzadzaj-sesje" style="display: none;">
-    <h2>Zarządzanie sesjami</h2>
-    <button onclick="otworzModalDodajSesje()" class="btn-primary">Dodaj nową sesję</button>
-    <div id="lista-sesji-do-zarzadzania"></div>
   </div>
 </div>
 
-<!-- MODAL: Szczegóły sesji i obecność -->
 <div id="modal-szczegoly-sesji" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-szczegoly-sesji')">&times;</span>
@@ -53,7 +43,7 @@
   </div>
 </div>
 
-<!-- MODAL: Dodaj sesję -->
+
 <div id="modal-dodaj-sesje" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-dodaj-sesje')">&times;</span>
@@ -84,14 +74,20 @@
 const API_URL = "https://masi-3c4j.onrender.com";
 let aktualnaSesja = null;
 
-// Formatuj datę bez godziny (YYYY-MM-DD)
 function formatDate(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString + 'T00:00:00');
-  return date.toISOString().split('T')[0];
+  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString;
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return '';
+  }
 }
 
-// Pobierz token i sprawdź czy zalogowany
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = "index.html";
@@ -104,120 +100,49 @@ function getAuthHeader() {
   };
 }
 
-// Wyloguj
 function wyloguj() {
   localStorage.clear();
   window.location.href = "index.html";
 }
 
-// Przełącz tab
 function pokazTabMojeSesje() {
   document.getElementById('tab-moje-sesje').style.display = 'block';
-  document.getElementById('tab-zarzadzaj-sesje').style.display = 'none';
   pobierzMojeSesje();
 }
 
-function pokazTabZarzadzajSesje() {
-  document.getElementById('tab-moje-sesje').style.display = 'none';
-  document.getElementById('tab-zarzadzaj-sesje').style.display = 'block';
-  pobierzSesjeDoBazardzania();
-}
 
-// Pobierz moje sesje
 async function pobierzMojeSesje() {
   try {
     const res = await fetch(API_URL + '/moje-zapisy', {
       headers: getAuthHeader()
     });
     const zapisy = await res.json();
-    
     const lista = document.getElementById('lista-moich-sesji');
     lista.innerHTML = '';
-    
     if (zapisy.length === 0) {
       lista.innerHTML = '<p>Nie masz żadnych zapisów na szkolenia.</p>';
       return;
     }
-    
-    // Dla każdego zapisu pobierz sesje
     for (const zapis of zapisy) {
       if (zapis.status === 'aktywny') {
-        const sesjeRes = await fetch(API_URL + '/sesje/' + zapis.szkolenie_id);
-        const sesje = await sesjeRes.json();
-        
+        // Pobierz terminy dla szkolenia
+        let terminy = [];
+        try {
+          const termRes = await fetch(`${API_URL}/terminy/${zapis.szkolenie_id}`, { headers: getAuthHeader() });
+          if (termRes.ok) terminy = await termRes.json();
+        } catch {}
+        let terminyTxt = terminy.length ? terminy.map(t => `${t.dzien_tygodnia} ${t.godzina.slice(0,5)}`).join(', ') : 'Brak terminów';
         const card = `
           <div class="sesja-card">
             <h3>${zapis.tytul}</h3>
             <p><strong>Trener:</strong> ${zapis.imie} ${zapis.nazwisko}</p>
             <p><strong>Status zapisu:</strong> ${zapis.status}</p>
-            <h4>Sesje szkolenia:</h4>
+            <h4>Terminy szkolenia:</h4>
+            <p>${terminyTxt}</p>
+          </div>
         `;
-        
-        if (sesje.length > 0) {
-          sesje.forEach(s => {
-            card += `
-              <div style="background-color: #e8f5e9; padding: 10px; margin: 5px 0; border-radius: 3px;">
-                <p><strong>Data:</strong> ${formatDate(s.data_sesji)}</p>
-                <p><strong>Lokalizacja:</strong> ${s.lokalizacja || 'Brak informacji'}</p>
-              </div>
-            `;
-          });
-        } else {
-          card += '<p>Brak zaplanowanych sesji.</p>';
-        }
-        
-        card += '</div>';
         lista.innerHTML += card;
       }
-    }
-  } catch (err) {
-    alert('Błąd: ' + err);
-  }
-}
-
-// Pobierz sesje do zarządzania (dla trenerów/adminów)
-async function pobierzSesjeDoBazardzania() {
-  try {
-    const res = await fetch(API_URL + '/moje-zapisy', {
-      headers: getAuthHeader()
-    });
-    const zapisy = await res.json();
-    
-    const lista = document.getElementById('lista-sesji-do-zarzadzania');
-    lista.innerHTML = '';
-    
-    // Pobierz szkolenia gdzie jestem trenerem
-    const szkolRes = await fetch(API_URL + '/szkolenia');
-    const wszystkieSzkolenia = await szkolRes.json();
-    
-    // Filtruj szkolenia gdzie jestem trenerem
-    const mojeSzkolenia = wszystkieSzkolenia; // W rzeczywistości powinieneś sprawdzić ID trenera
-    
-    for (const szkolenie of mojeSzkolenia) {
-      const sesjeRes = await fetch(API_URL + '/sesje/' + szkolenie.id);
-      const sesje = await sesjeRes.json();
-      
-      const card = `
-        <div class="sesja-card">
-          <h3>${szkolenie.tytul}</h3>
-      `;
-      
-      if (sesje.length > 0) {
-        sesje.forEach(s => {
-          card += `
-            <div style="background-color: #fff3e0; padding: 10px; margin: 5px 0; border-radius: 3px;">
-              <p><strong>Data:</strong> ${formatDate(s.data_sesji)}</p>
-              <p><strong>Lokalizacja:</strong> ${s.lokalizacja || 'Brak'}</p>
-              <button onclick="pokaZSzczegolySesji(${s.id}, '${szkolenie.tytul}')" class="btn-secondary">Zarządzaj obecnością</button>
-            </div>
-          `;
-        });
-      } else {
-        card += '<p>Brak sesji dla tego szkolenia.</p>';
-      }
-      
-      card += '</div>';
-      lista.innerHTML += card;
     }
   } catch (err) {
     alert('Błąd: ' + err);
@@ -325,7 +250,7 @@ async function dodajSesje() {
       document.getElementById('forma-szkolenie').value = '';
       document.getElementById('forma-data').value = '';
       document.getElementById('forma-lokalizacja').value = '';
-      await pokazTabZarzadzajSesje();
+      await pokazTabMojeSesje();
     } else {
       alert('Błąd: ' + (data.error || 'Nie udało się dodać sesji'));
     }

@@ -9,13 +9,11 @@
 
 <div class="login-container">
   <h1 class="page-title">🎓 Szkolenia u Goosiaków</h1>
-
   <div class="toggle-wrapper">
     <button class="toggle-btn active" onclick="pokazLogowanie()">Logowanie</button>
     <button class="toggle-btn inactive" onclick="pokazRejestracje()">Rejestracja</button>
   </div>
 
-  <!-- LOGOWANIE -->
   <div id="logowanie" class="form-container active">
     <h2 class="form-title">Zaloguj się</h2>
     <input type="text" id="email" placeholder="Login / Email">
@@ -25,7 +23,6 @@
     </div>
   </div>
 
-  <!-- REJESTRACJA -->
   <div id="rejestracja" class="form-container">
     <h2 class="form-title">Utwórz konto</h2>
     <input type="text" id="imie" placeholder="Imię">
@@ -45,12 +42,10 @@
 <script>
 const API_URL = "https://masi-3c4j.onrender.com";
 
-// Załaduj role przy uruchomieniu strony
 document.addEventListener('DOMContentLoaded', function() {
   pobierzRole();
 });
 
-// Pobierz dostępne role
 async function pobierzRole() {
   try {
     const response = await fetch(API_URL + '/api/role');
@@ -70,7 +65,6 @@ async function pobierzRole() {
   }
 }
 
-// Przełącz na logowanie
 function pokazLogowanie() {
   document.getElementById('logowanie').classList.add('active');
   document.getElementById('rejestracja').classList.remove('active');
@@ -81,7 +75,7 @@ function pokazLogowanie() {
   document.querySelectorAll('.toggle-btn')[1].classList.remove('active');
 }
 
-// Przełącz na rejestrację
+
 function pokazRejestracje() {
   document.getElementById('logowanie').classList.remove('active');
   document.getElementById('rejestracja').classList.add('active');
@@ -92,7 +86,7 @@ function pokazRejestracje() {
   document.querySelectorAll('.toggle-btn')[1].classList.remove('inactive');
 }
 
-// Rejestracja
+
 async function zarejestruj() {
   const imie = document.getElementById("imie").value;
   const nazwisko = document.getElementById("nazwisko").value;
@@ -134,7 +128,6 @@ async function zarejestruj() {
   }
 }
 
-// Logowanie
 async function zaloguj() {
   const login = document.getElementById("email").value;
   const password = document.getElementById("password").value;

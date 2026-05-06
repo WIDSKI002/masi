@@ -28,16 +28,10 @@
     </div>
   </div>
 
-  <!-- PANEL ORGANIZATORA -->
-  <div id="organizator-panel" style="display: none;">
-    <div class="organizator-section">
-      <h2>Panel Organizatora</h2>
-      <p>Dodawaj i zarządzaj szkoleniami.</p>
-      <button onclick="idz('organizator.html')" class="btn btn-secondary">Przejdź do panelu organizatora</button>
-    </div>
-  </div>
 
-  <!-- PANEL TRENERA -->
+
+
+
   <div id="trener-panel" style="display: none;">
     <div class="trener-section">
       <h2>Panel Trenera</h2>
@@ -46,7 +40,7 @@
     </div>
   </div>
 
-  <!-- MENU GŁÓWNE DLA WSZYSTKICH -->
+
   <h2>Menu główne</h2>
   <div class="menu">
     <div class="menu-card">
@@ -76,7 +70,6 @@
     window.location.href = "index.html";
   }
 
-  // Dekoduj token
   function decodeToken(token) {
     try {
       const base64Url = token.split('.')[1];
@@ -94,7 +87,6 @@
   const user = decodeToken(token);
   const API_URL = "https://masi-3c4j.onrender.com";
 
-  // Mapowanie roli na tekst
   const roleNames = {
     1: 'Administrator',
     2: 'Organizator',
@@ -102,11 +94,9 @@
     4: 'Uczestnik'
   };
 
-  // Wyświetl informacje użytkownika
   document.getElementById('user-name').textContent = user.email;
   document.getElementById('role-name').textContent = roleNames[user.rola] || 'Nieznana';
 
-  // Wyświetl odpowiednie panele na podstawie roli
   if (user.rola === 1) {
     document.getElementById('admin-panel').style.display = 'block';
   } else if (user.rola === 2) {
