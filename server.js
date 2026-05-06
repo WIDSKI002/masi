@@ -210,48 +210,22 @@ app.put('/szkolenia/:id', verifyToken, async (req, res) => {
   }
 });
 
-
 app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
-  const client = await pool.connect();
   try {
     const { id } = req.params;
-
-    if (req.user.rola !== 1) {
-      return res.status(403).json({ error: 'Brak uprawnien' });
-    }
-
-    await client.query('BEGIN');
-
-    const schResult = await client.query('SELECT id, tytul FROM szkolenia WHERE id = $1', [id]);
-    if (schResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Szkolenie nie znalezione' });
-    }
-
-    await client.query(
-      'DELETE FROM obecnosci WHERE sesja_id IN (SELECT id FROM sesje_szkolen WHERE szkolenie_id = $1)',
-      [id]
-    );
-    await client.query('DELETE FROM sesje_szkolen WHERE szkolenie_id = $1', [id]);
-    await client.query('DELETE FROM program_szkolenia WHERE szkolenie_id = $1', [id]);
-    await client.query('DELETE FROM certyfikaty WHERE szkolenie_id = $1', [id]);
-    await client.query(
-      'DELETE FROM platnosci WHERE zapis_id IN (SELECT id FROM zapisy WHERE szkolenie_id = $1)',
-      [id]
-    );
-    await client.query('DELETE FROM zapisy WHERE szkolenie_id = $1', [id]);
-    const result = await client.query('DELETE FROM szkolenia WHERE id = $1 RETURNING id, tytul', [id]);
-
-    await client.query('COMMIT');
-    res.json({ message: 'Szkolenie usuniete', szkolenie: result.rows[0] });
+    
+    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [id]);
+      'INSERT INTO zapisy (uzytkownik_id, szkolenie_id, status) VALUES ($1, $2, $3) RETURNING *',
+      [uzytkownik_id, szkolenie_id, 'aktywny']
+      [szkolenie_id]
+  
+    res.json(result.rows);
   } catch (err) {
-    await client.query('ROLLBACK');
     console.error(err);
-    res.status(500).json({ error: 'Blad serwera' });
-  } finally {
-    client.release();
+    res.status(500).json({ error: 'Błąd serwera' });
   }
 });
+
 
 
 // Dodaj sesję szkolenia (trener/admin/organizator)
