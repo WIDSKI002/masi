@@ -318,14 +318,21 @@ app.post('/certyfikaty', verifyToken, async (req, res) => {
   try {
     const { uzytkownik_id, szkolenie_id } = req.body;
     
+    if (!uzytkownik_id || !szkolenie_id) {
+      return res.status(400).json({ error: 'Brak wymaganych danych' });
+    }
 
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
+    if (schResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Szkolenie nie znalezione' });
+    }
+    
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
     
     const result = await pool.query(
-      'INSERT INTO certyfikaty (uzytkownik_id, szkolenie_id, data_wydania) VALUES ($1, $2, CURRENT_DATE) ON CONFLICT DO NOTHING RETURNING *',
+      'INSERT INTO certyfikaty (uzytkownik_id, szkolenie_id, data_wydania) VALUES ($1, $2, CURRENT_DATE) ON CONFLICT (uzytkownik_id, szkolenie_id) DO NOTHING RETURNING *',
       [uzytkownik_id, szkolenie_id]
     );
     

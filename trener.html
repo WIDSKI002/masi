@@ -576,7 +576,7 @@ async function pokazRaport(szkolenie_id, tytul) {
           <td>${obecnosci_count}/${raport.terminy.length}</td>
           <td>${u.ma_certyfikat ? 'Tak ✓' : 'Nie'}</td>
           <td>
-            ${!u.ma_certyfikat ? `<button onclick="otworzModalWydajCert(${u.id}, '${u.imie} ${u.nazwisko}')'" class="btn-primary" style="font-size:12px; padding: 5px 10px;">Wydaj</button>` : ''}
+            ${!u.ma_certyfikat ? `<button onclick="otworzModalWydajCert(${u.uzytkownik_id}, '${u.imie} ${u.nazwisko}')" class="btn-primary" style="font-size:12px; padding: 5px 10px;">Wydaj</button>` : ''}
           </td>
         </tr>
       `;
