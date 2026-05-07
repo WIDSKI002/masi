@@ -317,7 +317,7 @@ async function wyswietlMojeSzkolenia(szkolenia) {
         <h3>${s.tytul}</h3>
         <p><strong>Opis:</strong> ${s.opis || 'Brak'}</p>
         <p><strong>Status:</strong> ${s.status || 'Aktywne'} | <strong>Limit:</strong> ${s.limit_miejsc || 'Brak'} | <strong>Cena:</strong> ${s.cena || 'Brak'} zł</p>
-        <p><strong>Harmonogram:</strong> ${formatDate(s.data_rozpoczecia) || 'Brak'} - ${formatDate(s.data_zakonczenia) || 'Brak'}</p>
+        <p><strong>Harmonogram:</strong> ${s.data_rozpoczecia ? new Date(s.data_rozpoczecia).toLocaleDateString('pl-PL') : 'Brak'} - ${s.data_zakonczenia ? new Date(s.data_zakonczenia).toLocaleDateString('pl-PL') : 'Brak'}</p>
         <p><strong>Terminy:</strong> ${terminyTxt}</p>
         <button onclick="otworzModalEdytuj(${s.id})" class="btn-secondary">Edytuj</button>
         <button onclick="usunSzkolenie(${s.id})" class="btn-danger">Usuń</button>

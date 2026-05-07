@@ -74,20 +74,6 @@
 const API_URL = "https://masi-3c4j.onrender.com";
 let aktualnaSesja = null;
 
-function formatDate(dateString) {
-  if (!dateString) return '';
-  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    return dateString;
-  }
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
-  } catch (e) {
-    return '';
-  }
-}
-
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = "index.html";
@@ -98,6 +84,16 @@ function getAuthHeader() {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   };
+}
+
+function getRole() {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.rola;
+  } catch (e) {
+    return null;
+  }
 }
 
 function Powrot() {
@@ -111,54 +107,115 @@ function pokazTabMojeSesje() {
 
 
 async function pobierzMojeSesje() {
-  try {
-    const res = await fetch(API_URL + '/moje-zapisy', {
-      headers: getAuthHeader()
-    });
-    const zapisy = await res.json();
-    const lista = document.getElementById('lista-moich-sesji');
-    lista.innerHTML = '';
-    if (zapisy.length === 0) {
-      lista.innerHTML = '<p>Nie masz żadnych zapisów na szkolenia.</p>';
-      return;
-    }
-    for (const zapis of zapisy) {
-      if (zapis.status === 'aktywny') {
+  const role = getRole();
+  const lista = document.getElementById('lista-moich-sesji');
+  lista.innerHTML = '';
+  
+  if (role === 3) { // Trener
+    try {
+      const res = await fetch(API_URL + '/moje-szkolenia', { headers: getAuthHeader() });
+      const szkolenia = await res.json();
+      if (szkolenia.length === 0) {
+        lista.innerHTML = '<p>Nie masz żadnych szkoleń.</p>';
+        return;
+      }
+      for (const szkolenie of szkolenia) {
         // Pobierz terminy dla szkolenia
         let terminy = [];
         try {
-          const termRes = await fetch(`${API_URL}/terminy/${zapis.szkolenie_id}`, { headers: getAuthHeader() });
+          const termRes = await fetch(`${API_URL}/terminy/${szkolenie.id}`, { headers: getAuthHeader() });
           if (termRes.ok) terminy = await termRes.json();
         } catch {}
-        let terminyTxt = terminy.length ? terminy.map(t => `${t.dzien_tygodnia} ${t.godzina.slice(0,5)}`).join(', ') : 'Brak terminów';
-        const card = `
-          <div class="sesja-card">
-            <h3>${zapis.tytul}</h3>
-            <p><strong>Trener:</strong> ${zapis.imie} ${zapis.nazwisko}</p>
-            <p><strong>Status zapisu:</strong> ${zapis.status}</p>
-            <h4>Terminy szkolenia:</h4>
-            <p>${terminyTxt}</p>
-          </div>
-        `;
-        lista.innerHTML += card;
+        
+        if (terminy.length > 0) {
+          terminy.forEach(termin => {
+            const date = new Date(termin.termin);
+            const formatowany = date.toLocaleString('pl-PL', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            });
+            const card = `
+              <div class="sesja-card">
+                <h3>${szkolenie.tytul}</h3>
+                <p><strong>Termin:</strong> ${formatowany}</p>
+                <button class="btn-primary" onclick="pokaZSzczegolyTerminu(${termin.id}, '${szkolenie.tytul} - ${formatowany}')">Zaznacz obecność</button>
+              </div>
+            `;
+            lista.innerHTML += card;
+          });
+        } else {
+          const card = `
+            <div class="sesja-card">
+              <h3>${szkolenie.tytul}</h3>
+              <p>Brak terminów</p>
+            </div>
+          `;
+          lista.innerHTML += card;
+        }
       }
+    } catch (err) {
+      alert('Błąd: ' + err);
     }
-  } catch (err) {
-    alert('Błąd: ' + err);
+  } else { // Uczestnik
+    try {
+      const res = await fetch(API_URL + '/moje-zapisy', {
+        headers: getAuthHeader()
+      });
+      const zapisy = await res.json();
+      if (zapisy.length === 0) {
+        lista.innerHTML = '<p>Nie masz żadnych zapisów na szkolenia.</p>';
+        return;
+      }
+      for (const zapis of zapisy) {
+        if (zapis.status === 'aktywny') {
+          // Pobierz terminy dla szkolenia
+          let terminy = [];
+          try {
+            const termRes = await fetch(`${API_URL}/terminy/${zapis.szkolenie_id}`, { headers: getAuthHeader() });
+            if (termRes.ok) terminy = await termRes.json();
+          } catch {}
+          let terminyTxt = terminy.length ? terminy.map(t => {
+            const date = new Date(t.termin);
+            return date.toLocaleString('pl-PL', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            });
+          }).join(', ') : 'Brak terminów';
+          const card = `
+            <div class="sesja-card">
+              <h3>${zapis.tytul}</h3>
+              <p><strong>Trener:</strong> ${zapis.imie} ${zapis.nazwisko}</p>
+              <p><strong>Status zapisu:</strong> ${zapis.status}</p>
+              <h4>Terminy szkolenia:</h4>
+              <p>${terminyTxt}</p>
+            </div>
+          `;
+          lista.innerHTML += card;
+        }
+      }
+    } catch (err) {
+      alert('Błąd: ' + err);
+    }
   }
 }
 
-// Pokaż szczegóły sesji i listę obecności
-async function pokaZSzczegolySesji(sesja_id, tytul) {
+// Pokaż szczegóły terminu i listę obecności
+async function pokaZSzczegolyTerminu(termin_id, tytul) {
   try {
-    const res = await fetch(API_URL + '/sesje/' + sesja_id + '/obecnosci', {
+    const res = await fetch(API_URL + '/obecnosci/' + termin_id, {
       headers: getAuthHeader()
     });
     const obecnosci = await res.json();
     
-    aktualnaSesja = sesja_id;
+    aktualnaSesja = termin_id;
     document.getElementById('modal-sesji-tytul').textContent = tytul;
-    document.getElementById('modal-sesji-data').textContent = 'Sesja ID: ' + sesja_id;
+    document.getElementById('modal-sesji-data').textContent = 'Termin ID: ' + termin_id;
     
     const tbody = document.getElementById('tbody-obecnosci');
     tbody.innerHTML = '';
@@ -170,7 +227,7 @@ async function pokaZSzczegolySesji(sesja_id, tytul) {
           <td>${o.nazwisko}</td>
           <td>${o.email}</td>
           <td>
-            <input type="checkbox" ${o.obecny ? 'checked' : ''} onchange="zaznaczObecnosc(${o.uzytkownik_id}, ${sesja_id}, this.checked)">
+            <input type="checkbox" ${o.obecny ? 'checked' : ''} onchange="zaznaczObecnosc(${o.uzytkownik_id}, ${termin_id}, this.checked)">
           </td>
           <td><span style="color: ${o.obecny ? 'green' : 'red'}">${o.obecny ? 'Obecny' : 'Nieobecny'}</span></td>
         </tr>
@@ -185,17 +242,17 @@ async function pokaZSzczegolySesji(sesja_id, tytul) {
 }
 
 // Zaznacz obecność
-async function zaznaczObecnosc(uzytkownik_id, sesja_id, obecny) {
+async function zaznaczObecnosc(uzytkownik_id, termin_id, obecny) {
   try {
     const res = await fetch(API_URL + '/obecnosci', {
       method: 'POST',
       headers: getAuthHeader(),
-      body: JSON.stringify({ uzytkownik_id, sesja_id, obecny })
+      body: JSON.stringify({ uzytkownik_id, termin_id, obecny })
     });
     
     if (res.ok) {
       console.log('Obecność zaktualizowana');
-      pokaZSzczegolySesji(sesja_id, document.getElementById('modal-sesji-tytul').textContent);
+      pokaZSzczegolyTerminu(termin_id, document.getElementById('modal-sesji-tytul').textContent);
     }
   } catch (err) {
     alert('Błąd: ' + err);

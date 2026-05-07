@@ -254,30 +254,30 @@ app.post('/sesje', verifyToken, async (req, res) => {
 
 app.post('/obecnosci', verifyToken, async (req, res) => {
   try {
-    const { uzytkownik_id, sesja_id, obecny } = req.body;
+    const { uzytkownik_id, termin_id, obecny } = req.body;
 
-    const sesjaResult = await pool.query('SELECT szkolenie_id FROM sesje_szkolen WHERE id = $1', [sesja_id]);
-    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [sesjaResult.rows[0].szkolenie_id]);
+    const terminResult = await pool.query('SELECT szkolenie_id FROM terminy_szkolen WHERE id = $1', [termin_id]);
+    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [terminResult.rows[0].szkolenie_id]);
     
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
   
     const existResult = await pool.query(
-      'SELECT id FROM obecnosci WHERE uzytkownik_id = $1 AND sesja_id = $2',
-      [uzytkownik_id, sesja_id]
+      'SELECT id FROM obecnosci WHERE uzytkownik_id = $1 AND termin_id = $2',
+      [uzytkownik_id, termin_id]
     );
     
     let result;
     if (existResult.rows.length > 0) {
       result = await pool.query(
-        'UPDATE obecnosci SET obecny = $1 WHERE uzytkownik_id = $2 AND sesja_id = $3 RETURNING *',
-        [obecny, uzytkownik_id, sesja_id]
+        'UPDATE obecnosci SET obecny = $1 WHERE uzytkownik_id = $2 AND termin_id = $3 RETURNING *',
+        [obecny, uzytkownik_id, termin_id]
       );
     } else {
       result = await pool.query(
-        'INSERT INTO obecnosci (uzytkownik_id, sesja_id, obecny) VALUES ($1, $2, $3) RETURNING *',
-        [uzytkownik_id, sesja_id, obecny]
+        'INSERT INTO obecnosci (uzytkownik_id, termin_id, obecny) VALUES ($1, $2, $3) RETURNING *',
+        [uzytkownik_id, termin_id, obecny]
       );
     }
     res.json(result.rows[0]);
@@ -287,13 +287,24 @@ app.post('/obecnosci', verifyToken, async (req, res) => {
   }
 });
 
-app.get('/sesje/:sesja_id/obecnosci', verifyToken, async (req, res) => {
+app.get('/obecnosci/:termin_id', verifyToken, async (req, res) => {
   try {
-    const { sesja_id } = req.params;
+    const { termin_id } = req.params;
     
     const result = await pool.query(
-      'SELECT o.id, o.obecny, u.id as uzytkownik_id, u.imie, u.nazwisko, u.email FROM obecnosci o JOIN uzytkownicy u ON o.uzytkownik_id = u.id WHERE o.sesja_id = $1 ORDER BY u.nazwisko',
-      [sesja_id]
+      `SELECT 
+          z.id as zapis_id,
+          u.id as uzytkownik_id,
+          u.imie,
+          u.nazwisko,
+          u.email,
+          COALESCE(o.obecny, false) as obecny
+       FROM zapisy z
+       JOIN uzytkownicy u ON z.uzytkownik_id = u.id
+       LEFT JOIN obecnosci o ON o.uzytkownik_id = u.id AND o.termin_id = $1
+       WHERE z.szkolenie_id = (SELECT szkolenie_id FROM terminy_szkolen WHERE id = $1) AND z.status = 'aktywny'
+       ORDER BY u.nazwisko`,
+      [termin_id]
     );
     res.json(result.rows);
   } catch (err) {

@@ -57,20 +57,6 @@ let aktualneSzkolenie = null;
 let wszystkieSzkolenia = [];
 
 
-function formatDate(dateString) {
-  if (!dateString) return '';
-  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    return dateString;
-  }
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
-  } catch (e) {
-    return '';
-  }
-}
-
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = "index.html";
@@ -142,8 +128,8 @@ async function pokazSzczegoly(szkolenie_id) {
     document.getElementById('modal-opis').textContent = szkolenie.opis || 'Brak opisu';
     document.getElementById('modal-cena').textContent = szkolenie.cena || 'Brak';
     document.getElementById('modal-limit').textContent = szkolenie.limit_miejsc || 'Brak';
-    document.getElementById('modal-data-start').textContent = formatDate(szkolenie.data_rozpoczecia) || 'Nie ustalona';
-    document.getElementById('modal-data-end').textContent = formatDate(szkolenie.data_zakonczenia) || 'Nie ustalona';
+    document.getElementById('modal-data-start').textContent = szkolenie.data_rozpoczecia ? new Date(szkolenie.data_rozpoczecia).toLocaleDateString('pl-PL') : 'Nie ustalona';
+    document.getElementById('modal-data-end').textContent = szkolenie.data_zakonczenia ? new Date(szkolenie.data_zakonczenia).toLocaleDateString('pl-PL') : 'Nie ustalona';
     document.getElementById('modal-status').textContent = szkolenie.status || 'Aktywne';
     
     // Pobierz i wyświetl terminy
@@ -238,8 +224,8 @@ function wyswietlMojeZapisy(zapisy) {
         <p><strong>Trener:</strong> ${trener}</p>
         <p><strong>Data zapisania:</strong> ${new Date(z.data_zapisu).toLocaleDateString('pl-PL')}</p>
         <p><strong>Status:</strong> <span style="color: ${z.status === 'aktywny' ? 'green' : 'red'}">${z.status}</span></p>
-        <p><strong>Data rozpoczęcia:</strong> ${z.data_rozpoczecia || 'Nie ustalona'}</p>
-        <p><strong>Data zakończenia:</strong> ${z.data_zakonczenia || 'Nie ustalona'}</p>
+        <p><strong>Data rozpoczęcia:</strong> ${z.data_rozpoczecia ? new Date(z.data_rozpoczecia).toLocaleDateString('pl-PL') : 'Nie ustalona'}</p>
+        <p><strong>Data zakończenia:</strong> ${z.data_zakonczenia ? new Date(z.data_zakonczenia).toLocaleDateString('pl-PL') : 'Nie ustalona'}</p>
         ${z.status === 'aktywny' ? `<button class="btn-danger" onclick="anulujZapis(${z.id})">Anuluj zapis</button>` : ''}
       </div>
     `;
