@@ -115,7 +115,6 @@ function wyswietlSzkolenia(szkolenia) {
   });
 }
 
-// Pokaż szczegóły szkolenia
 async function pokazSzczegoly(szkolenie_id) {
   try {
     const res = await fetch(API_URL + '/szkolenia/' + szkolenie_id);
@@ -132,7 +131,6 @@ async function pokazSzczegoly(szkolenie_id) {
     document.getElementById('modal-data-end').textContent = szkolenie.data_zakonczenia ? new Date(szkolenie.data_zakonczenia).toLocaleDateString('pl-PL') : 'Nie ustalona';
     document.getElementById('modal-status').textContent = szkolenie.status || 'Aktywne';
     
-    // Pobierz i wyświetl terminy
     const programLista = document.getElementById('program-lista');
     programLista.innerHTML = '';
     try {
@@ -170,7 +168,6 @@ async function pokazSzczegoly(szkolenie_id) {
   }
 }
 
-// Zapisz się na szkolenie
 async function zapisSieNaSzkolenie() {
   try {
     const res = await fetch(API_URL + '/zapisy', {
@@ -192,7 +189,6 @@ async function zapisSieNaSzkolenie() {
   }
 }
 
-// Pobierz moje zapisy
 async function pobierzMojeZapisy() {
   try {
     const res = await fetch(API_URL + '/moje-zapisy', {
@@ -205,7 +201,6 @@ async function pobierzMojeZapisy() {
   }
 }
 
-// Wyświetl moje zapisy
 function wyswietlMojeZapisy(zapisy) {
   const lista = document.getElementById('lista-zapis');
   lista.innerHTML = '';

@@ -147,7 +147,6 @@ function pokazTab(tabId) {
   }
 }
 
-// ============ STATYSTYKI ============
 async function pobierzStatystyki() {
   try {
     const res = await fetch(API_URL + '/statystyki', {
@@ -164,7 +163,6 @@ async function pobierzStatystyki() {
   }
 }
 
-// ============ UŻYTKOWNICY ============
 async function pobierzUzytkownikow() {
   try {
     const res = await fetch(API_URL + '/admin/uzytkownicy', {
@@ -240,7 +238,6 @@ async function aktualizujRole() {
   }
 }
 
-// Szukanie użytkowników
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('szukaj-uzytkownika').addEventListener('keyup', function() {
     const szukaj = this.value.toLowerCase();
@@ -256,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
   pobierzUzytkownikow();
 });
 
-// ============ SZKOLENIA ============
 async function pobierzSzkolenia() {
   try {
     const res = await fetch(API_URL + '/szkolenia');
@@ -318,7 +314,7 @@ async function usunSzkolenie(szkolenieId) {
     alert('Blad: ' + err);
   }
 }
-// ============ RAPORTY ============
+
 function generujRaport() {
   const raportContent = document.getElementById('raport-content');
   const data = new Date().toLocaleDateString('pl-PL');
@@ -341,7 +337,7 @@ function generujRaport() {
   document.getElementById('raport-certyfikaty').textContent = document.getElementById('stat-certyfikaty').textContent;
 }
 
-// ============ MODAL ============
+
 function zamknijModal(modalId) {
   document.getElementById(modalId).style.display = 'none';
 }

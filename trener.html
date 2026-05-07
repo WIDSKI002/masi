@@ -1,5 +1,4 @@
 <script>
-// --- Terminy szkolenia (dodawanie) ---
 function dodajTerminPole() {
   const lista = document.getElementById('terminy-lista');
   const div = document.createElement('div');
@@ -11,7 +10,6 @@ function dodajTerminPole() {
   `;
   lista.appendChild(div);
 }
-
 
 function dodajTerminEditPole(termin = '', terminId = null) {
   const lista = document.getElementById('terminy-edit-lista');
@@ -41,7 +39,6 @@ function usunTerminZFormularza(btn) {
   const row = btn.parentNode;
   const terminId = row.dataset.terminId;
   if (terminId) {
-    // Jeśli termin już istnieje w bazie, usuń go
     fetch(API_URL + '/terminy/' + terminId, {
       method: 'DELETE',
       headers: getAuthHeader()
@@ -62,7 +59,7 @@ function usunTerminZFormularza(btn) {
   <div class="header">
     <h1>Panel Trenera</h1>
     <div>
-      <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
+     <button onclick="Powrot()" class="btn-danger">Powrót</button>
     </div>
   </div>
 
@@ -72,27 +69,23 @@ function usunTerminZFormularza(btn) {
     <button onclick="pokazTab('tab-certyfikaty')" class="btn-secondary">Certyfikaty</button>
   </div>
 
-  <!-- TAB: Moje szkolenia -->
   <div id="tab-moje-szkolenia" style="display: block;">
     <h2>Moje szkolenia</h2>
     <button onclick="otworzModalDodajSzkolenie()" class="btn-primary" style="margin-bottom: 15px;">Dodaj nowe szkolenie</button>
     <div id="lista-moich-szkolen"></div>
   </div>
 
-  <!-- TAB: Raporty -->
   <div id="tab-raporty" style="display: none;">
     <h2>Raporty szkolenia</h2>
     <div id="lista-raportow"></div>
   </div>
 
-  <!-- TAB: Certyfikaty -->
   <div id="tab-certyfikaty" style="display: none;">
-    <h2>Wydaj certyfikaty</h2>
+    <h2>Wydane certyfikaty</h2>
     <div id="lista-certyfikatow"></div>
   </div>
 </div>
 
-<!-- MODAL: Dodaj szkolenie -->
 <div id="modal-dodaj-szkolenie" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-dodaj-szkolenie')">&times;</span>
@@ -121,7 +114,6 @@ function usunTerminZFormularza(btn) {
       <label>Data zakończenia:</label>
       <input type="date" id="forma-data-end">
     </div>
-    <!-- Tutaj będą terminy -->
     <div class="form-group">
       <label>Terminy (dni i godziny):</label>
       <div id="terminy-lista"></div>
@@ -131,7 +123,6 @@ function usunTerminZFormularza(btn) {
   </div>
 </div>
 
-<!-- MODAL: Edytuj szkolenie -->
 <div id="modal-edytuj-szkolenie" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-edytuj-szkolenie')">&times;</span>
@@ -169,7 +160,6 @@ function usunTerminZFormularza(btn) {
         <option value="archiwalne">Archiwalne</option>
       </select>
     </div>
-    <!-- Tutaj będą terminy -->
     <div class="form-group">
       <label>Terminy (dni i godziny):</label>
       <div id="terminy-edit-lista"></div>
@@ -179,7 +169,6 @@ function usunTerminZFormularza(btn) {
   </div>
 </div>
 
-<!-- MODAL: Raport szkolenia -->
 <div id="modal-raport" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-raport')">&times;</span>
@@ -220,10 +209,8 @@ let aktualneIdSzkolenia = null;
 let aktualnyIdUczestnika = null;
 let aktualnyIdRaportu = null;
 
-// Formatuj datę bez godziny (YYYY-MM-DD)
 function formatDate(dateString) {
   if (!dateString) return '';
-  // Jeśli data już ma format YYYY-MM-DD, zwróć ją jako jest
   if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
     return dateString;
   }
@@ -248,9 +235,8 @@ function getAuthHeader() {
   };
 }
 
-function wyloguj() {
-  localStorage.clear();
-  window.location.href = "index.html";
+function Powrot() {
+  window.location.href = "strona.html";
 }
 
 function pokazTab(tabId) {
@@ -268,7 +254,6 @@ function pokazTab(tabId) {
   }
 }
 
-// ============ SZKOLENIA ============
 async function pobierzMojeSzkolenia() {
   try {
     const res = await fetch(API_URL + '/moje-szkolenia', {
@@ -289,7 +274,6 @@ async function wyswietlMojeSzkolenia(szkolenia) {
     return;
   }
   for (const s of szkolenia) {
-    // Pobierz terminy dla szkolenia
     let terminy = [];
     try {
       const res = await fetch(`${API_URL}/terminy/${s.id}`, { headers: getAuthHeader() });
@@ -362,7 +346,6 @@ async function dodajSzkolenie() {
     if (res.ok) {
       const szkolenie = await res.json();
       
-      // Dodaj terminy
       const terminElements = document.querySelectorAll('#terminy-lista .termin-row');
       for (const elem of terminElements) {
         const datetime = elem.querySelector('.termin-datetime').value;
@@ -415,7 +398,6 @@ async function otworzModalEdytuj(szkolenie_id) {
     document.getElementById('forma-edit-data-end').value = formatDate(szkolenie.data_zakonczenia);
     document.getElementById('forma-edit-status').value = szkolenie.status || '';
     
-    // Pobierz i wyświetl terminy
     document.getElementById('terminy-edit-lista').innerHTML = '';
     try {
       const terminyRes = await fetch(API_URL + '/terminy/' + szkolenie_id, {
@@ -462,7 +444,6 @@ async function aktualizujSzkolenie() {
     });
     
     if (res.ok) {
-      // Aktualizuj terminy
       const terminElements = document.querySelectorAll('#terminy-edit-lista .termin-row');
       for (const elem of terminElements) {
         const datetime = elem.querySelector('.termin-datetime').value;
@@ -472,7 +453,6 @@ async function aktualizujSzkolenie() {
         
         try {
           if (terminId) {
-            // Edycja istniejącego terminu
             await fetch(API_URL + '/terminy/' + terminId, {
               method: 'PUT',
               headers: getAuthHeader(),
@@ -481,7 +461,6 @@ async function aktualizujSzkolenie() {
               })
             });
           } else {
-            // Dodaj nowy termin
             await fetch(API_URL + '/terminy', {
               method: 'POST',
               headers: getAuthHeader(),
@@ -523,7 +502,6 @@ async function usunSzkolenie(szkolenie_id) {
   }
 }
 
-// ============ RAPORTY ============
 async function pobierzRaporty() {
   try {
     const res = await fetch(API_URL + '/moje-szkolenia', {
@@ -673,7 +651,6 @@ window.onclick = function(event) {
     }
   });
 }
-
 
 document.addEventListener('DOMContentLoaded', function() {
   pobierzMojeSzkolenia();

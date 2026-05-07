@@ -43,7 +43,6 @@
   </div>
 </div>
 
-
 <div id="modal-dodaj-sesje" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-dodaj-sesje')">&times;</span>
@@ -105,7 +104,6 @@ function pokazTabMojeSesje() {
   pobierzMojeSesje();
 }
 
-
 async function pobierzMojeSesje() {
   const role = getRole();
   const lista = document.getElementById('lista-moich-sesji');
@@ -120,7 +118,6 @@ async function pobierzMojeSesje() {
         return;
       }
       for (const szkolenie of szkolenia) {
-        // Pobierz terminy dla szkolenia
         let terminy = [];
         try {
           const termRes = await fetch(`${API_URL}/terminy/${szkolenie.id}`, { headers: getAuthHeader() });
@@ -171,7 +168,6 @@ async function pobierzMojeSesje() {
       }
       for (const zapis of zapisy) {
         if (zapis.status === 'aktywny') {
-          // Pobierz terminy dla szkolenia
           let terminy = [];
           try {
             const termRes = await fetch(`${API_URL}/terminy/${zapis.szkolenie_id}`, { headers: getAuthHeader() });
@@ -205,7 +201,6 @@ async function pobierzMojeSesje() {
   }
 }
 
-// Pokaż szczegóły terminu i listę obecności
 async function pokaZSzczegolyTerminu(termin_id, tytul) {
   try {
     const res = await fetch(API_URL + '/obecnosci/' + termin_id, {
@@ -241,7 +236,6 @@ async function pokaZSzczegolyTerminu(termin_id, tytul) {
   }
 }
 
-// Zaznacz obecność
 async function zaznaczObecnosc(uzytkownik_id, termin_id, obecny) {
   try {
     const res = await fetch(API_URL + '/obecnosci', {
@@ -259,7 +253,6 @@ async function zaznaczObecnosc(uzytkownik_id, termin_id, obecny) {
   }
 }
 
-// Otwórz modal dodaj sesję
 async function otworzModalDodajSesje() {
   try {
     const res = await fetch(API_URL + '/szkolenia');
@@ -281,7 +274,6 @@ async function otworzModalDodajSesje() {
   }
 }
 
-// Dodaj sesję
 async function dodajSesje() {
   const szkolenie_id = parseInt(document.getElementById('forma-szkolenie').value);
   const data_sesji = document.getElementById('forma-data').value;
@@ -315,12 +307,10 @@ async function dodajSesje() {
   }
 }
 
-// Zamknij modal
 function zamknijModal(modalId) {
   document.getElementById(modalId).style.display = 'none';
 }
 
-// Zamknij modal po kliknięciu poza nim
 window.onclick = function(event) {
   const modalSzczegoly = document.getElementById('modal-szczegoly-sesji');
   const modalDodaj = document.getElementById('modal-dodaj-sesje');
@@ -333,7 +323,6 @@ window.onclick = function(event) {
   }
 }
 
-// Inicjalizacja
 document.addEventListener('DOMContentLoaded', function() {
   pobierzMojeSesje();
 });

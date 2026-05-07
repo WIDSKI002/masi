@@ -144,8 +144,6 @@ function verifyToken(req, res, next) {
   }
 }
 
-// ============== SZKOLENIA ==============
-// Pobierz wszystkie szkolenia
 app.get('/szkolenia', async (req, res) => {
   try {
     const result = await pool.query(
@@ -158,7 +156,6 @@ app.get('/szkolenia', async (req, res) => {
   }
 });
 
-// Pobierz szczegóły szkolenia
 app.get('/szkolenia/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -170,7 +167,6 @@ app.get('/szkolenia/:id', async (req, res) => {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
     }
     
-    // Pobierz program szkolenia
     const program = await pool.query(
       'SELECT * FROM terminy_szkolen WHERE szkolenie_id = $1 ORDER BY termin',
       [id]
@@ -183,13 +179,11 @@ app.get('/szkolenia/:id', async (req, res) => {
   }
 });
 
-// Edytuj szkolenie (tylko trener lub admin)
 app.put('/szkolenia/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { tytul, opis, limit_miejsc, cena, status, data_rozpoczecia, data_zakonczenia } = req.body;
     
-    // Sprawdzenie uprawnień
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [id]);
     if (schResult.rows.length === 0) {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
@@ -223,9 +217,6 @@ app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
   }
 });
 
-
-
-
 app.post('/sesje', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id, data_sesji, lokalizacja } = req.body;
@@ -235,7 +226,7 @@ app.post('/sesje', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
     }
     
-    const allowedRoles = [1, 2, 3]; // admin, organizator, trener
+    const allowedRoles = [1, 2, 3]; // admin, user, trener
     if (!allowedRoles.includes(req.user.rola) && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
@@ -250,7 +241,6 @@ app.post('/sesje', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Blad serwera' });
   }
 });
-
 
 app.post('/obecnosci', verifyToken, async (req, res) => {
   try {
@@ -313,7 +303,6 @@ app.get('/obecnosci/:termin_id', verifyToken, async (req, res) => {
   }
 });
 
-
 app.post('/certyfikaty', verifyToken, async (req, res) => {
   try {
     const { uzytkownik_id, szkolenie_id } = req.body;
@@ -347,7 +336,6 @@ app.post('/certyfikaty', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz moje certyfikaty
 app.get('/moje-certyfikaty', verifyToken, async (req, res) => {
   try {
     const uzytkownik_id = req.user.userId;
@@ -362,7 +350,6 @@ app.get('/moje-certyfikaty', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz certyfikaty wydane przez trenera
 app.get('/certyfikaty-trenera', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(
@@ -376,13 +363,10 @@ app.get('/certyfikaty-trenera', verifyToken, async (req, res) => {
   }
 });
 
-// ============== PŁATNOŚCI ==============
-// Pobierz płatności dla zapisu
 app.get('/platnosci/:zapis_id', verifyToken, async (req, res) => {
   try {
     const { zapis_id } = req.params;
     
-    // Sprawdzenie uprawnień
     const zapis = await pool.query('SELECT uzytkownik_id FROM zapisy WHERE id = $1', [zapis_id]);
     if (zapis.rows.length === 0 || zapis.rows[0].uzytkownik_id !== req.user.userId) {
       return res.status(403).json({ error: 'Brak uprawnien' });
@@ -399,12 +383,10 @@ app.get('/platnosci/:zapis_id', verifyToken, async (req, res) => {
   }
 });
 
-// Dodaj płatność
 app.post('/platnosci', verifyToken, async (req, res) => {
   try {
     const { zapis_id, kwota } = req.body;
     
-    // Sprawdzenie uprawnień
     const zapis = await pool.query('SELECT uzytkownik_id FROM zapisy WHERE id = $1', [zapis_id]);
     if (zapis.rows.length === 0 || zapis.rows[0].uzytkownik_id !== req.user.userId) {
       return res.status(403).json({ error: 'Brak uprawnien' });
@@ -421,8 +403,6 @@ app.post('/platnosci', verifyToken, async (req, res) => {
   }
 });
 
-// ============== POWIADOMIENIA ==============
-// Pobierz moje powiadomienia
 app.get('/powiadomienia', verifyToken, async (req, res) => {
   try {
     const uzytkownik_id = req.user.userId;
@@ -437,12 +417,10 @@ app.get('/powiadomienia', verifyToken, async (req, res) => {
   }
 });
 
-// Wyślij powiadomienie (admin/trener)
 app.post('/powiadomienia', verifyToken, async (req, res) => {
   try {
     const { uzytkownik_id, tresc, typ } = req.body;
     
-    // Tylko admin (rola 1) może wysyłać powiadomienia
     if (req.user.rola !== 1) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
@@ -462,7 +440,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id } = req.params;
 
-    // Pobranie szkolenia
     const schResult = await pool.query(
       'SELECT trener_id FROM szkolenia WHERE id = $1',
       [szkolenie_id]
@@ -472,7 +449,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
     }
 
-    // Sprawdzenie czy user jest administratorem
     const roleResult = await pool.query(
       `SELECT r.nazwa
        FROM uzytkownik_role ur
@@ -484,7 +460,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
     const roleNames = roleResult.rows.map(r => r.nazwa);
     const isAdmin = roleNames.includes('Administrator');
 
-    // Uprawnienia
     if (
       !isAdmin &&
       req.user.userId !== schResult.rows[0].trener_id
@@ -492,7 +467,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
 
-    // Uczestnicy szkolenia
     const uczestnicy = await pool.query(
       `SELECT 
           u.id,
@@ -508,7 +482,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
       [szkolenie_id]
     );
 
-    // Terminy szkolenia
     const terminy = await pool.query(
       `SELECT 
           ts.id,
@@ -523,7 +496,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
 
     for (const uczestnik of uczestnicy.rows) {
 
-      // Obecności
       const obecnosci = await pool.query(
         `SELECT 
             ts.termin,
@@ -537,7 +509,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
         [uczestnik.id, szkolenie_id]
       );
 
-      // Certyfikat
       const certyfikat = await pool.query(
         `SELECT id
          FROM certyfikaty
@@ -565,7 +536,6 @@ app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz statystyki (dla admina)
 app.get('/statystyki', verifyToken, async (req, res) => {
   try {
     if (req.user.rola !== 1) {
@@ -589,7 +559,6 @@ app.get('/statystyki', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz listę użytkowników z rolami (dla admina)
 app.get('/admin/uzytkownicy', verifyToken, async (req, res) => {
   try {
     if (req.user.rola !== 1) {
@@ -606,7 +575,6 @@ app.get('/admin/uzytkownicy', verifyToken, async (req, res) => {
   }
 });
 
-// Zmień rolę użytkownika (admin)
 app.put('/admin/uzytkownicy/:id/rola', verifyToken, async (req, res) => {
   try {
     if (req.user.rola !== 1) {
@@ -616,10 +584,8 @@ app.put('/admin/uzytkownicy/:id/rola', verifyToken, async (req, res) => {
     const { id } = req.params;
     const { rola_id } = req.body;
     
-    // Usuń starą rolę
     await pool.query('DELETE FROM uzytkownik_role WHERE uzytkownik_id = $1', [id]);
     
-    // Dodaj nową rolę
     const result = await pool.query(
       'INSERT INTO uzytkownik_role (uzytkownik_id, rola_id) VALUES ($1, $2) RETURNING *',
       [id, rola_id]
@@ -631,12 +597,10 @@ app.put('/admin/uzytkownicy/:id/rola', verifyToken, async (req, res) => {
   }
 });
 
-// Dodaj program do szkolenia
 app.post('/program-szkolenia', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id, tytul, opis, kolejnosc } = req.body;
     
-    // Sprawdzenie uprawnień
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnien' });
@@ -653,7 +617,6 @@ app.post('/program-szkolenia', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz moje szkolenia (dla trenera)
 app.get('/moje-szkolenia', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(
@@ -667,8 +630,6 @@ app.get('/moje-szkolenia', verifyToken, async (req, res) => {
   }
 });
 
-// ============== TERMINY SZKOLENIA ==============
-// Pobierz terminy szkolenia
 app.get('/terminy/:szkolenie_id', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id } = req.params;
@@ -683,12 +644,10 @@ app.get('/terminy/:szkolenie_id', verifyToken, async (req, res) => {
   }
 });
 
-// Dodaj termin szkolenia
 app.post('/terminy', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id, termin } = req.body;
     
-    // Sprawdzenie uprawnień
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (schResult.rows.length === 0) {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
@@ -708,13 +667,11 @@ app.post('/terminy', verifyToken, async (req, res) => {
   }
 });
 
-// Edytuj termin szkolenia
 app.put('/terminy/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { termin } = req.body;
     
-    // Sprawdzenie uprawnień
     const terminResult = await pool.query('SELECT szkolenie_id FROM terminy_szkolen WHERE id = $1', [id]);
     if (terminResult.rows.length === 0) {
       return res.status(404).json({ error: 'Termin nie znaleziony' });
@@ -735,12 +692,10 @@ app.put('/terminy/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Usuń termin szkolenia
 app.delete('/terminy/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Sprawdzenie uprawnień
     const terminResult = await pool.query('SELECT szkolenie_id FROM terminy_szkolen WHERE id = $1', [id]);
     if (terminResult.rows.length === 0) {
       return res.status(404).json({ error: 'Termin nie znaleziony' });
@@ -761,8 +716,6 @@ app.delete('/terminy/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ============== ZAPISY NA SZKOLENIA ==============
-// Zapisz się na szkolenie
 app.post('/zapisy', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id } = req.body;
@@ -772,13 +725,11 @@ app.post('/zapisy', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Brak szkolenia_id' });
     }
     
-    // Sprawdzenie czy szkolenie istnieje
     const schResult = await pool.query('SELECT id, limit_miejsc FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (schResult.rows.length === 0) {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
     }
     
-    // Sprawdzenie czy użytkownik już się zapisał
     const checkZapis = await pool.query(
       'SELECT id FROM zapisy WHERE uzytkownik_id = $1 AND szkolenie_id = $2',
       [uzytkownik_id, szkolenie_id]
@@ -798,7 +749,6 @@ app.post('/zapisy', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz moje zapisy
 app.get('/moje-zapisy', verifyToken, async (req, res) => {
   try {
     const uzytkownik_id = req.user.userId;
@@ -828,13 +778,11 @@ app.get('/moje-zapisy', verifyToken, async (req, res) => {
   }
 });
 
-// Anuluj zapis na szkolenie
 app.post('/zapisy/:id/anuluj', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const uzytkownik_id = req.user.userId;
     
-    // Sprawdzenie uprawnień
     const zapis = await pool.query('SELECT uzytkownik_id FROM zapisy WHERE id = $1', [id]);
     if (zapis.rows.length === 0) {
       return res.status(404).json({ error: 'Zapis nie znaleziony' });
