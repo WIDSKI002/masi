@@ -332,7 +332,7 @@ app.post('/certyfikaty', verifyToken, async (req, res) => {
     }
     
     const result = await pool.query(
-      'INSERT INTO certyfikaty (uzytkownik_id, szkolenie_id, data_wydania) VALUES ($1, $2, CURRENT_DATE) RETURNING *',,
+      'INSERT INTO certyfikaty (uzytkownik_id, szkolenie_id, data_wydania) VALUES ($1, $2, CURRENT_DATE) RETURNING *',
       [uzytkownik_id, szkolenie_id]
     );
     
