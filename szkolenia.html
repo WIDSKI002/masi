@@ -12,25 +12,24 @@
     <div>
       <button onclick="pokazTabMojeZapisy()" class="btn-secondary">Moje Zapisy</button>
       <button onclick="pokazTabSzkolenia()" class="btn-primary">Dostępne Szkolenia</button>
-      <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
+      <button onclick="Powrot()" class="btn-danger">Powrót</button>
+      
     </div>
   </div>
 
-  <!-- TAB: Dostępne Szkolenia -->
   <div id="tab-szkolenia" style="display: block;">
     <h2>Dostępne szkolenia</h2>
     <input type="text" id="szukaj" placeholder="Szukaj szkolenia..." style="padding: 10px; margin: 10px 0; width: 300px;">
     <div id="lista-szkolen"></div>
   </div>
 
-  <!-- TAB: Moje Zapisy -->
   <div id="tab-moje-zapisy" style="display: none;">
     <h2>Moje zapisy na szkolenia</h2>
     <div id="lista-zapis"></div>
   </div>
 </div>
 
-<!-- MODAL: Szczegóły szkolenia -->
+
 <div id="modal-szczegoly" class="modal">
   <div class="modal-content">
     <span class="close" onclick="zamknijModal('modal-szczegoly')">&times;</span>
@@ -57,10 +56,9 @@ const API_URL = "https://masi-3c4j.onrender.com";
 let aktualneSzkolenie = null;
 let wszystkieSzkolenia = [];
 
-// Formatuj datę bez godziny (YYYY-MM-DD)
+
 function formatDate(dateString) {
   if (!dateString) return '';
-  // Jeśli data już ma format YYYY-MM-DD, zwróć ją jako jest
   if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
     return dateString;
   }
@@ -73,13 +71,11 @@ function formatDate(dateString) {
   }
 }
 
-// Pobierz token i sprawdź czy zalogowany
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = "index.html";
 }
 
-// Pobierz nagłówek Authorization
 function getAuthHeader() {
   return {
     'Authorization': `Bearer ${token}`,
@@ -87,13 +83,7 @@ function getAuthHeader() {
   };
 }
 
-// Wyloguj
-function wyloguj() {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
 
-// Przełącz tab
 function pokazTabSzkolenia() {
   document.getElementById('tab-szkolenia').style.display = 'block';
   document.getElementById('tab-moje-zapisy').style.display = 'none';
@@ -106,7 +96,6 @@ function pokazTabMojeZapisy() {
   pobierzMojeZapisy();
 }
 
-// Pobierz wszystkie szkolenia
 async function pobierzSzkolenia() {
   try {
     const res = await fetch(API_URL + '/szkolenia');
@@ -118,7 +107,9 @@ async function pobierzSzkolenia() {
   }
 }
 
-// Wyświetl szkolenia
+function Powrot() {
+  window.location.href = "strona.html";
+}
 function wyswietlSzkolenia(szkolenia) {
   const lista = document.getElementById('lista-szkolen');
   lista.innerHTML = '';

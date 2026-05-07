@@ -61,7 +61,7 @@ app.get('/trenera', async (req, res) => {
 app.post('/dodajSzkolenie', verifyToken, async (req, res) => {
   const { tytul, opis, limit_miejsc, cena, data_rozpoczecia, data_zakonczenia, status } = req.body;
   try {
-    const allowedRoles = [1, 2, 3]; // admin, organizator, trener
+    const allowedRoles = [1, 2, 3]; // admin, uczestnik, trener
     if (!allowedRoles.includes(req.user.rola)) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
@@ -225,12 +225,11 @@ app.delete('/szkolenia/:id', verifyToken, async (req, res) => {
 
 
 
-// Dodaj sesję szkolenia (trener/admin/organizator)
+
 app.post('/sesje', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id, data_sesji, lokalizacja } = req.body;
-    
-    // Sprawdzenie uprawnień - trener, admin lub organizator
+
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (schResult.rows.length === 0) {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
@@ -252,21 +251,18 @@ app.post('/sesje', verifyToken, async (req, res) => {
   }
 });
 
-// ============== OBECNOŚĆ ==============
-// Zaznacz obecność (trener/admin)
+
 app.post('/obecnosci', verifyToken, async (req, res) => {
   try {
     const { uzytkownik_id, sesja_id, obecny } = req.body;
-    
-    // Sprawdzenie uprawnień - sprawdzamy czy jest trener
+
     const sesjaResult = await pool.query('SELECT szkolenie_id FROM sesje_szkolen WHERE id = $1', [sesja_id]);
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [sesjaResult.rows[0].szkolenie_id]);
     
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
-    
-    // Sprawdź czy rekord istnieje
+  
     const existResult = await pool.query(
       'SELECT id FROM obecnosci WHERE uzytkownik_id = $1 AND sesja_id = $2',
       [uzytkownik_id, sesja_id]
@@ -291,7 +287,6 @@ app.post('/obecnosci', verifyToken, async (req, res) => {
   }
 });
 
-// Pobierz listę obecności dla sesji
 app.get('/sesje/:sesja_id/obecnosci', verifyToken, async (req, res) => {
   try {
     const { sesja_id } = req.params;
@@ -307,13 +302,12 @@ app.get('/sesje/:sesja_id/obecnosci', verifyToken, async (req, res) => {
   }
 });
 
-// ============== CERTYFIKATY ==============
-// Generuj certyfikat
+
 app.post('/certyfikaty', verifyToken, async (req, res) => {
   try {
     const { uzytkownik_id, szkolenie_id } = req.body;
     
-    // Sprawdzenie uprawnień - tylko admin/trener
+
     const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
     if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
       return res.status(403).json({ error: 'Brak uprawnien' });
@@ -432,59 +426,107 @@ app.post('/powiadomienia', verifyToken, async (req, res) => {
   }
 });
 
-// ============== RAPORTOWANIE ==============
-// Pobierz raport szkolenia (lista uczestników, obecność, certyfikaty)
 app.get('/raporty/szkolenie/:szkolenie_id', verifyToken, async (req, res) => {
   try {
     const { szkolenie_id } = req.params;
-    
-    // Sprawdzenie uprawnień - sprawdzamy czy jest trener
-    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
+
+    // Pobranie szkolenia
+    const schResult = await pool.query(
+      'SELECT trener_id FROM szkolenia WHERE id = $1',
+      [szkolenie_id]
+    );
+
     if (schResult.rows.length === 0) {
       return res.status(404).json({ error: 'Szkolenie nie znalezione' });
     }
-    
-    if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
+
+    // Sprawdzenie czy user jest administratorem
+    const roleResult = await pool.query(
+      `SELECT r.nazwa
+       FROM uzytkownik_role ur
+       JOIN role r ON ur.rola_id = r.id
+       WHERE ur.uzytkownik_id = $1`,
+      [req.user.userId]
+    );
+
+    const roleNames = roleResult.rows.map(r => r.nazwa);
+    const isAdmin = roleNames.includes('Administrator');
+
+    // Uprawnienia
+    if (
+      !isAdmin &&
+      req.user.userId !== schResult.rows[0].trener_id
+    ) {
       return res.status(403).json({ error: 'Brak uprawnien' });
     }
-    
-    // Pobierz uczestników
+
+    // Uczestnicy szkolenia
     const uczestnicy = await pool.query(
-      'SELECT u.id, u.imie, u.nazwisko, u.email, z.status, z.id as zapis_id FROM zapisy z JOIN uzytkownicy u ON z.uzytkownik_id = u.id WHERE z.szkolenie_id = $1',
+      `SELECT 
+          u.id,
+          u.imie,
+          u.nazwisko,
+          u.email,
+          z.status,
+          z.id AS zapis_id
+       FROM zapisy z
+       JOIN uzytkownicy u 
+         ON z.uzytkownik_id = u.id
+       WHERE z.szkolenie_id = $1`,
       [szkolenie_id]
     );
-    
-    // Pobierz sesje i obecności
-    const sesje = await pool.query(
-      'SELECT ss.id, ss.data_sesji FROM sesje_szkolen ss WHERE ss.szkolenie_id = $1 ORDER BY ss.data_sesji',
+
+    // Terminy szkolenia
+    const terminy = await pool.query(
+      `SELECT 
+          ts.id,
+          ts.termin
+       FROM terminy_szkolen ts
+       WHERE ts.szkolenie_id = $1
+       ORDER BY ts.termin`,
       [szkolenie_id]
     );
-    
-    // Dla każdego uczestnika i sesji pobierz obecność
+
     const raport = [];
+
     for (const uczestnik of uczestnicy.rows) {
+
+      // Obecności
       const obecnosci = await pool.query(
-        'SELECT ss.data_sesji, o.obecny FROM sesje_szkolen ss LEFT JOIN obecnosci o ON o.sesja_id = ss.id AND o.uzytkownik_id = $1 WHERE ss.szkolenie_id = $2 ORDER BY ss.data_sesji',
+        `SELECT 
+            ts.termin,
+            o.obecny
+         FROM terminy_szkolen ts
+         LEFT JOIN obecnosci o
+           ON o.termin_id = ts.id
+           AND o.uzytkownik_id = $1
+         WHERE ts.szkolenie_id = $2
+         ORDER BY ts.termin`,
         [uczestnik.id, szkolenie_id]
       );
-      
+
+      // Certyfikat
       const certyfikat = await pool.query(
-        'SELECT id FROM certyfikaty WHERE uzytkownik_id = $1 AND szkolenie_id = $2',
+        `SELECT id
+         FROM certyfikaty
+         WHERE uzytkownik_id = $1
+           AND szkolenie_id = $2`,
         [uczestnik.id, szkolenie_id]
       );
-      
+
       raport.push({
         ...uczestnik,
         obecnosci: obecnosci.rows,
         ma_certyfikat: certyfikat.rows.length > 0
       });
     }
-    
+
     res.json({
       szkolenie_id,
-      sesje: sesje.rows,
+      terminy: terminy.rows,
       uczestnicy: raport
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Blad serwera' });

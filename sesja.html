@@ -11,7 +11,7 @@
   
   <div class="tab-buttons">
     <button onclick="pokazTabMojeSesje()" class="btn-primary">Moje Terminy</button>
-    <button onclick="wyloguj()" class="btn-danger">Wyloguj</button>
+    <button onclick="Powrot()" class="btn-danger">Powrót</button>
   </div>
 
   <div id="tab-moje-sesje" style="display: block;">
@@ -100,9 +100,8 @@ function getAuthHeader() {
   };
 }
 
-function wyloguj() {
-  localStorage.clear();
-  window.location.href = "index.html";
+function Powrot() {
+  window.location.href = "strona.html";
 }
 
 function pokazTabMojeSesje() {

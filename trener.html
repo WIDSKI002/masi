@@ -465,7 +465,7 @@ async function pokazRaport(szkolenie_id, tytul) {
       headers: getAuthHeader()
     });
     const raport = await res.json();
-    
+        console.log(raport);
     aktualnyIdRaportu = szkolenie_id;
     document.getElementById('raport-tytul').textContent = tytul;
     

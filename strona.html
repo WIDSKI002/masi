@@ -89,9 +89,8 @@
 
   const roleNames = {
     1: 'Administrator',
-    2: 'Organizator',
+    2: 'Uczestnik',
     3: 'Trener',
-    4: 'Uczestnik'
   };
 
   document.getElementById('user-name').textContent = user.email;
@@ -99,8 +98,6 @@
 
   if (user.rola === 1) {
     document.getElementById('admin-panel').style.display = 'block';
-  } else if (user.rola === 2) {
-    document.getElementById('organizator-panel').style.display = 'block';
   } else if (user.rola === 3) {
     document.getElementById('trener-panel').style.display = 'block';
   }

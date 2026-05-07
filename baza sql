@@ -93,8 +93,8 @@ CREATE TABLE powiadomienia (
 
 INSERT INTO role (nazwa) VALUES
 ('Administrator'),
-('Trener'),
-('Uczestnik');
+('Uczestnik'),
+('Trener');
 
 CREATE TABLE terminy_szkolen (
     id SERIAL PRIMARY KEY,
