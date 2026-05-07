@@ -43,7 +43,7 @@
     <p><strong>Status:</strong> <span id="modal-status"></span></p>
     
     <div id="modal-program">
-      <h3>Program szkolenia:</h3>
+      <h3>Terminy szkolenia:</h3>
       <ul id="program-lista"></ul>
     </div>
     
@@ -146,15 +146,36 @@ async function pokazSzczegoly(szkolenie_id) {
     document.getElementById('modal-data-end').textContent = formatDate(szkolenie.data_zakonczenia) || 'Nie ustalona';
     document.getElementById('modal-status').textContent = szkolenie.status || 'Aktywne';
     
-    // Wyświetl program
+    // Pobierz i wyświetl terminy
     const programLista = document.getElementById('program-lista');
     programLista.innerHTML = '';
-    if (szkolenie.program && szkolenie.program.length > 0) {
-      szkolenie.program.forEach(p => {
-        programLista.innerHTML += `<li><strong>${p.tytul}:</strong> ${p.opis}</li>`;
+    try {
+      const terminyRes = await fetch(`${API_URL}/terminy/${szkolenie_id}`, { 
+        headers: getAuthHeader() 
       });
-    } else {
-      programLista.innerHTML = '<li>Brak programu</li>';
+      if (terminyRes.ok) {
+        const terminy = await terminyRes.json();
+        if (terminy.length > 0) {
+          terminy.forEach(t => {
+            const date = new Date(t.termin);
+            const formatowany = date.toLocaleString('pl-PL', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            });
+            programLista.innerHTML += `<li>${formatowany}</li>`;
+          });
+        } else {
+          programLista.innerHTML = '<li>Brak terminów</li>';
+        }
+      } else {
+        programLista.innerHTML = '<li>Brak terminów</li>';
+      }
+    } catch (err) {
+      console.error('Błąd pobierania terminów:', err);
+      programLista.innerHTML = '<li>Brak terminów</li>';
     }
     
     document.getElementById('modal-szczegoly').style.display = 'block';

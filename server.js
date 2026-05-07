@@ -729,7 +729,98 @@ app.delete('/terminy/:id', verifyToken, async (req, res) => {
   }
 });
 
+// ============== ZAPISY NA SZKOLENIA ==============
+// Zapisz się na szkolenie
+app.post('/zapisy', verifyToken, async (req, res) => {
+  try {
+    const { szkolenie_id } = req.body;
+    const uzytkownik_id = req.user.userId;
+    
+    if (!szkolenie_id) {
+      return res.status(400).json({ error: 'Brak szkolenia_id' });
+    }
+    
+    // Sprawdzenie czy szkolenie istnieje
+    const schResult = await pool.query('SELECT id, limit_miejsc FROM szkolenia WHERE id = $1', [szkolenie_id]);
+    if (schResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Szkolenie nie znalezione' });
+    }
+    
+    // Sprawdzenie czy użytkownik już się zapisał
+    const checkZapis = await pool.query(
+      'SELECT id FROM zapisy WHERE uzytkownik_id = $1 AND szkolenie_id = $2',
+      [uzytkownik_id, szkolenie_id]
+    );
+    if (checkZapis.rows.length > 0) {
+      return res.status(400).json({ error: 'Już się zapisałeś na to szkolenie' });
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO zapisy (uzytkownik_id, szkolenie_id, status) VALUES ($1, $2, $3) RETURNING *',
+      [uzytkownik_id, szkolenie_id, 'aktywny']
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
 
+// Pobierz moje zapisy
+app.get('/moje-zapisy', verifyToken, async (req, res) => {
+  try {
+    const uzytkownik_id = req.user.userId;
+    const result = await pool.query(
+      `SELECT 
+          z.id,
+          z.status,
+          z.data_zapisu,
+          s.id as szkolenie_id,
+          s.tytul,
+          s.opis,
+          s.data_rozpoczecia,
+          s.data_zakonczenia,
+          u.imie,
+          u.nazwisko
+       FROM zapisy z
+       JOIN szkolenia s ON z.szkolenie_id = s.id
+       LEFT JOIN uzytkownicy u ON s.trener_id = u.id
+       WHERE z.uzytkownik_id = $1
+       ORDER BY z.data_zapisu DESC`,
+      [uzytkownik_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
+
+// Anuluj zapis na szkolenie
+app.post('/zapisy/:id/anuluj', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const uzytkownik_id = req.user.userId;
+    
+    // Sprawdzenie uprawnień
+    const zapis = await pool.query('SELECT uzytkownik_id FROM zapisy WHERE id = $1', [id]);
+    if (zapis.rows.length === 0) {
+      return res.status(404).json({ error: 'Zapis nie znaleziony' });
+    }
+    if (zapis.rows[0].uzytkownik_id !== uzytkownik_id) {
+      return res.status(403).json({ error: 'Brak uprawnien' });
+    }
+    
+    const result = await pool.query(
+      'UPDATE zapisy SET status = $1 WHERE id = $2 RETURNING *',
+      ['anulowany', id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
