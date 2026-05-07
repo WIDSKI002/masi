@@ -2,48 +2,53 @@
 // --- Terminy szkolenia (dodawanie) ---
 function dodajTerminPole() {
   const lista = document.getElementById('terminy-lista');
-  const idx = lista.children.length;
   const div = document.createElement('div');
   div.className = 'termin-row';
   div.style.marginBottom = '6px';
   div.innerHTML = `
-    <select class="termin-dzien" style="margin-right:8px;">
-      <option value="">Dzień tygodnia</option>
-      <option>Poniedziałek</option>
-      <option>Wtorek</option>
-      <option>Środa</option>
-      <option>Czwartek</option>
-      <option>Piątek</option>
-      <option>Sobota</option>
-      <option>Niedziela</option>
-    </select>
-    <input type="time" class="termin-godzina" style="margin-right:8px;">
+    <input type="datetime-local" class="termin-datetime" style="margin-right:8px;">
     <button type="button" onclick="this.parentNode.remove()" class="btn-danger" style="padding:2px 8px;">Usuń</button>
   `;
   lista.appendChild(div);
 }
 
 // --- Terminy szkolenia (edycja) ---
-function dodajTerminEditPole(dzien = '', godzina = '') {
+function dodajTerminEditPole(termin = '', terminId = null) {
   const lista = document.getElementById('terminy-edit-lista');
   const div = document.createElement('div');
   div.className = 'termin-row';
   div.style.marginBottom = '6px';
+  div.dataset.terminId = terminId || '';
+  
+  // Konwersja ISO timestamp do formatu datetime-local
+  let terminValue = '';
+  if (termin) {
+    try {
+      const date = new Date(termin);
+      terminValue = date.toISOString().slice(0, 16);
+    } catch (e) {
+      terminValue = termin;
+    }
+  }
+  
   div.innerHTML = `
-    <select class="termin-dzien" style="margin-right:8px;">
-      <option value="">Dzień tygodnia</option>
-      <option${dzien==='Poniedziałek'?' selected':''}>Poniedziałek</option>
-      <option${dzien==='Wtorek'?' selected':''}>Wtorek</option>
-      <option${dzien==='Środa'?' selected':''}>Środa</option>
-      <option${dzien==='Czwartek'?' selected':''}>Czwartek</option>
-      <option${dzien==='Piątek'?' selected':''}>Piątek</option>
-      <option${dzien==='Sobota'?' selected':''}>Sobota</option>
-      <option${dzien==='Niedziela'?' selected':''}>Niedziela</option>
-    </select>
-    <input type="time" class="termin-godzina" value="${godzina}" style="margin-right:8px;">
-    <button type="button" onclick="this.parentNode.remove()" class="btn-danger" style="padding:2px 8px;">Usuń</button>
+    <input type="datetime-local" class="termin-datetime" value="${terminValue}" style="margin-right:8px;">
+    <button type="button" onclick="usunTerminZFormularza(this)" class="btn-danger" style="padding:2px 8px;">Usuń</button>
   `;
   lista.appendChild(div);
+}
+
+function usunTerminZFormularza(btn) {
+  const row = btn.parentNode;
+  const terminId = row.dataset.terminId;
+  if (terminId) {
+    // Jeśli termin już istnieje w bazie, usuń go
+    fetch(API_URL + '/terminy/' + terminId, {
+      method: 'DELETE',
+      headers: getAuthHeader()
+    }).catch(err => console.error('Błąd usuwania terminu:', err));
+  }
+  row.remove();
 }
 </script>
 <!DOCTYPE html>
@@ -340,6 +345,28 @@ async function dodajSzkolenie() {
     });
     
     if (res.ok) {
+      const szkolenie = await res.json();
+      
+      // Dodaj terminy
+      const terminElements = document.querySelectorAll('#terminy-lista .termin-row');
+      for (const elem of terminElements) {
+        const datetime = elem.querySelector('.termin-datetime').value;
+        if (datetime) {
+          try {
+            await fetch(API_URL + '/terminy', {
+              method: 'POST',
+              headers: getAuthHeader(),
+              body: JSON.stringify({
+                szkolenie_id: szkolenie.id,
+                termin: new Date(datetime).toISOString()
+              })
+            });
+          } catch (err) {
+            console.error('Błąd dodawania terminu:', err);
+          }
+        }
+      }
+      
       alert('Szkolenie dodane!');
       zamknijModal('modal-dodaj-szkolenie');
       document.getElementById('forma-tytul').value = '';
@@ -348,6 +375,7 @@ async function dodajSzkolenie() {
       document.getElementById('forma-cena').value = '';
       document.getElementById('forma-data-start').value = '';
       document.getElementById('forma-data-end').value = '';
+      document.getElementById('terminy-lista').innerHTML = '';
       pobierzMojeSzkolenia();
     } else {
       const error = await res.json();
@@ -371,6 +399,22 @@ async function otworzModalEdytuj(szkolenie_id) {
     document.getElementById('forma-edit-data-start').value = formatDate(szkolenie.data_rozpoczecia);
     document.getElementById('forma-edit-data-end').value = formatDate(szkolenie.data_zakonczenia);
     document.getElementById('forma-edit-status').value = szkolenie.status || '';
+    
+    // Pobierz i wyświetl terminy
+    document.getElementById('terminy-edit-lista').innerHTML = '';
+    try {
+      const terminyRes = await fetch(API_URL + '/terminy/' + szkolenie_id, {
+        headers: getAuthHeader()
+      });
+      if (terminyRes.ok) {
+        const terminy = await terminyRes.json();
+        terminy.forEach(t => {
+          dodajTerminEditPole(t.termin, t.id);
+        });
+      }
+    } catch (err) {
+      console.error('Błąd pobierania terminów:', err);
+    }
     
     document.getElementById('modal-edytuj-szkolenie').style.display = 'block';
   } catch (err) {
@@ -403,6 +447,40 @@ async function aktualizujSzkolenie() {
     });
     
     if (res.ok) {
+      // Aktualizuj terminy
+      const terminElements = document.querySelectorAll('#terminy-edit-lista .termin-row');
+      for (const elem of terminElements) {
+        const datetime = elem.querySelector('.termin-datetime').value;
+        const terminId = elem.dataset.terminId;
+        
+        if (!datetime) continue;
+        
+        try {
+          if (terminId) {
+            // Edycja istniejącego terminu
+            await fetch(API_URL + '/terminy/' + terminId, {
+              method: 'PUT',
+              headers: getAuthHeader(),
+              body: JSON.stringify({
+                termin: new Date(datetime).toISOString()
+              })
+            });
+          } else {
+            // Dodaj nowy termin
+            await fetch(API_URL + '/terminy', {
+              method: 'POST',
+              headers: getAuthHeader(),
+              body: JSON.stringify({
+                szkolenie_id: aktualneIdSzkolenia,
+                termin: new Date(datetime).toISOString()
+              })
+            });
+          }
+        } catch (err) {
+          console.error('Błąd aktualizacji terminu:', err);
+        }
+      }
+      
       alert('Szkolenie zaktualizowane!');
       zamknijModal('modal-edytuj-szkolenie');
       pobierzMojeSzkolenia();

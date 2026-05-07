@@ -635,8 +635,99 @@ app.get('/moje-szkolenia', verifyToken, async (req, res) => {
   }
 });
 
+// ============== TERMINY SZKOLENIA ==============
+// Pobierz terminy szkolenia
+app.get('/terminy/:szkolenie_id', verifyToken, async (req, res) => {
+  try {
+    const { szkolenie_id } = req.params;
+    const result = await pool.query(
+      'SELECT id, szkolenie_id, termin FROM terminy_szkolen WHERE szkolenie_id = $1 ORDER BY termin',
+      [szkolenie_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
 
+// Dodaj termin szkolenia
+app.post('/terminy', verifyToken, async (req, res) => {
+  try {
+    const { szkolenie_id, termin } = req.body;
+    
+    // Sprawdzenie uprawnień
+    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [szkolenie_id]);
+    if (schResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Szkolenie nie znalezione' });
+    }
+    if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
+      return res.status(403).json({ error: 'Brak uprawnien' });
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO terminy_szkolen (szkolenie_id, termin) VALUES ($1, $2) RETURNING *',
+      [szkolenie_id, termin]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
 
+// Edytuj termin szkolenia
+app.put('/terminy/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { termin } = req.body;
+    
+    // Sprawdzenie uprawnień
+    const terminResult = await pool.query('SELECT szkolenie_id FROM terminy_szkolen WHERE id = $1', [id]);
+    if (terminResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Termin nie znaleziony' });
+    }
+    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [terminResult.rows[0].szkolenie_id]);
+    if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
+      return res.status(403).json({ error: 'Brak uprawnien' });
+    }
+    
+    const result = await pool.query(
+      'UPDATE terminy_szkolen SET termin = $1 WHERE id = $2 RETURNING *',
+      [termin, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
+
+// Usuń termin szkolenia
+app.delete('/terminy/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Sprawdzenie uprawnień
+    const terminResult = await pool.query('SELECT szkolenie_id FROM terminy_szkolen WHERE id = $1', [id]);
+    if (terminResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Termin nie znaleziony' });
+    }
+    const schResult = await pool.query('SELECT trener_id FROM szkolenia WHERE id = $1', [terminResult.rows[0].szkolenie_id]);
+    if (req.user.rola !== 1 && req.user.userId !== schResult.rows[0].trener_id) {
+      return res.status(403).json({ error: 'Brak uprawnien' });
+    }
+    
+    const result = await pool.query(
+      'DELETE FROM terminy_szkolen WHERE id = $1 RETURNING *',
+      [id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
 
 
 
