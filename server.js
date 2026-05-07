@@ -172,7 +172,7 @@ app.get('/szkolenia/:id', async (req, res) => {
     
     // Pobierz program szkolenia
     const program = await pool.query(
-      'SELECT * FROM program_szkolenia WHERE szkolenie_id = $1 ORDER BY kolejnosc',
+      'SELECT * FROM terminy_szkolen WHERE szkolenie_id = $1 ORDER BY kolejnosc',
       [id]
     );
     
