@@ -617,8 +617,36 @@ async function wydajCertyfikat() {
 }
 
 async function pobierzCertyfikaty() {
+  try {
+    const res = await fetch(API_URL + '/certyfikaty-trenera', {
+      headers: getAuthHeader()
+    });
+    const cert = await res.json();
+    wyswietlCertyfikaty(cert);
+  } catch (err) {
+    alert('Błąd: ' + err);
+  }
+}
+
+function wyswietlCertyfikaty(cert) {
   const lista = document.getElementById('lista-certyfikatow');
-  lista.innerHTML = '<p>Funkcjonalność w przygotowaniu...</p>';
+  lista.innerHTML = '';
+  
+  if (cert.length === 0) {
+    lista.innerHTML = '<p>Nie wydałeś jeszcze żadnych certyfikatów.</p>';
+    return;
+  }
+  
+  cert.forEach(c => {
+    const card = `
+      <div class="card">
+        <h3>${c.tytul}</h3>
+        <p><strong>Uczestnik:</strong> ${c.imie} ${c.nazwisko}</p>
+        <p><strong>Data wydania:</strong> ${new Date(c.data_wydania).toLocaleDateString('pl-PL')}</p>
+      </div>
+    `;
+    lista.innerHTML += card;
+  });
 }
 
 function zamknijModal(modalId) {

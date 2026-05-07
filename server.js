@@ -355,6 +355,20 @@ app.get('/moje-certyfikaty', verifyToken, async (req, res) => {
   }
 });
 
+// Pobierz certyfikaty wydane przez trenera
+app.get('/certyfikaty-trenera', verifyToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT c.id, c.data_wydania, s.tytul, u.imie, u.nazwisko FROM certyfikaty c JOIN szkolenia s ON c.szkolenie_id = s.id JOIN uzytkownicy u ON c.uzytkownik_id = u.id WHERE s.trener_id = $1 ORDER BY c.data_wydania DESC',
+      [req.user.userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Blad serwera' });
+  }
+});
+
 // ============== PŁATNOŚCI ==============
 // Pobierz płatności dla zapisu
 app.get('/platnosci/:zapis_id', verifyToken, async (req, res) => {

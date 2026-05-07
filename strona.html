@@ -58,7 +58,7 @@
     <div class="menu-card">
       <h3>📜 Moje Certyfikaty</h3>
       <p>Przeglądaj swoje ukończone szkolenia i certyfikaty.</p>
-      <button onclick="pokaZertyfikaty()" class="btn btn-primary">Moje certyfikaty</button>
+      <button onclick="idz('certyfikaty.html')" class="btn btn-primary">Moje certyfikaty</button>
     </div>
   </div>
 </div>
@@ -109,30 +109,6 @@
 
   function idz(strona) {
     window.location.href = strona;
-  }
-
-  async function pokaZertyfikaty() {
-    try {
-      const res = await fetch(API_URL + '/moje-certyfikaty', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const cert = await res.json();
-      
-      if (cert.length === 0) {
-        alert('Nie masz jeszcze żadnych certyfikatów.');
-      } else {
-        let lista = 'Twoje certyfikaty:\n\n';
-        cert.forEach(c => {
-          lista += `- ${c.tytul} (wydano: ${new Date(c.data_wydania).toLocaleDateString('pl-PL')})\n`;
-        });
-        alert(lista);
-      }
-    } catch (err) {
-      alert('Błąd: ' + err);
-    }
   }
 </script>
 </body>
