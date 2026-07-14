@@ -2,162 +2,135 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Szkolenia u Goosiaków - Logowanie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <title>Kalendarz</title>
 </head>
 <body>
-
-<div class="login-container">
-  <h1 class="page-title">🎓 Szkolenia u Goosiaków</h1>
-  <div class="toggle-wrapper">
-    <button class="toggle-btn active" onclick="pokazLogowanie()">Logowanie</button>
-    <button class="toggle-btn inactive" onclick="pokazRejestracje()">Rejestracja</button>
-  </div>
-
-  <div id="logowanie" class="form-container active">
-    <h2 class="form-title">Zaloguj się</h2>
-    <input type="text" id="email" placeholder="Login / Email">
-    <input type="password" id="password" placeholder="Hasło">
-    <div class="form-buttons">
-      <button class="btn-submit" onclick="zaloguj()">Zaloguj</button>
+  <div class="container">
+    <div class="header">
+      <h1>Kalendarz z opcjami</h1>
+      <div class="user-info">
+        <p>Razem: <span id="total">0</span> zł</p>
+        <p>Z paliwem: <span id="totalFuel">0</span> zł</p>
+      </div>
     </div>
-  </div>
 
-  <div id="rejestracja" class="form-container">
-    <h2 class="form-title">Utwórz konto</h2>
-    <input type="text" id="imie" placeholder="Imię">
-    <input type="text" id="nazwisko" placeholder="Nazwisko">
-    <input type="text" id="email1" placeholder="Login / Email">
-    <input type="password" id="password1" placeholder="Hasło">
-    <input type="password" id="password2" placeholder="Powtórz hasło">
-    <select id="rola">
-      <option value="">-- Wybierz rolę --</option>
-    </select>
-    <div class="form-buttons">
-      <button class="btn-submit" onclick="zarejestruj()">Zarejestruj</button>
+    <div style="display:flex;gap:20px;align-items:center;margin-bottom:20px;">
+      <div>
+        <button id="prevMonth" class="btn btn-secondary">&lt;</button>
+        <button id="nextMonth" class="btn btn-secondary">&gt;</button>
+      </div>
+      <h2 id="monthLabel"></h2>
+      <div style="margin-left:auto">
+        <form id="rateForm">
+          <label>Data obowiązywania: <input type="date" id="rateDate" required></label>
+          <label>Cały dzień: <input type="number" id="rateWhole" value="250" required></label>
+          <label>Paliwo: <input type="number" id="rateFuel" value="50" required></label>
+          <button type="submit" class="btn btn-primary">Zapisz stawkę</button>
+        </form>
+      </div>
     </div>
+
+    <div id="calendar" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
   </div>
-</div>
 
-<script>
-const API_URL = "https://masi-3c4j.onrender.com";
+  <script>
+    const API_URL = ''; // relative
 
-document.addEventListener('DOMContentLoaded', function() {
-  pobierzRole();
-});
+    let current = new Date();
 
-async function pobierzRole() {
-  try {
-    const response = await fetch(API_URL + '/api/role');
-    const data = await response.json();
-    const select = document.getElementById('rola');
-    select.innerHTML = '<option value="">-- Wybierz rolę --</option>';
+    function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+    function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
 
-    data.forEach(rola => {
-      const option = document.createElement('option');
-      option.value = rola.id;
-      option.textContent = rola.nazwa;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    console.error('Błąd:', error);
-    document.getElementById('rola').innerHTML = '<option value="">Błąd ładowania ról</option>';
-  }
-}
+    document.getElementById('prevMonth').addEventListener('click', ()=>{ current.setMonth(current.getMonth()-1); render(); });
+    document.getElementById('nextMonth').addEventListener('click', ()=>{ current.setMonth(current.getMonth()+1); render(); });
 
-function pokazLogowanie() {
-  document.getElementById('logowanie').classList.add('active');
-  document.getElementById('rejestracja').classList.remove('active');
-  
-  document.querySelectorAll('.toggle-btn')[0].classList.add('active');
-  document.querySelectorAll('.toggle-btn')[0].classList.remove('inactive');
-  document.querySelectorAll('.toggle-btn')[1].classList.add('inactive');
-  document.querySelectorAll('.toggle-btn')[1].classList.remove('active');
-}
-
-
-function pokazRejestracje() {
-  document.getElementById('logowanie').classList.remove('active');
-  document.getElementById('rejestracja').classList.add('active');
-  
-  document.querySelectorAll('.toggle-btn')[0].classList.add('inactive');
-  document.querySelectorAll('.toggle-btn')[0].classList.remove('active');
-  document.querySelectorAll('.toggle-btn')[1].classList.add('active');
-  document.querySelectorAll('.toggle-btn')[1].classList.remove('inactive');
-}
-
-
-async function zarejestruj() {
-  const imie = document.getElementById("imie").value;
-  const nazwisko = document.getElementById("nazwisko").value;
-  const email = document.getElementById("email1").value;
-  const password = document.getElementById("password1").value;
-  const password2 = document.getElementById("password2").value;
-  const rola = document.getElementById("rola").value;
-  
-  if (!imie || !nazwisko || !email || !password || !password2 || !rola) {
-    alert("Proszę wypełnić wszystkie pola!");
-    return;
-  }
-  
-  if (password !== password2) {
-    alert("Hasła się nie zgadzają!");
-    return;
-  }
-
-  try {
-    const res = await fetch(API_URL + '/rejestracja', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ imie, nazwisko, email, password, rola }),
-    });
-    const data = await res.json();
-    
-    if (res.ok) {
-      alert("Rejestracja udana! Możesz się zalogować.");
-      pokazLogowanie();
-      document.getElementById("email").value = email;
-      document.getElementById("password").value = "";
-    } else {
-      alert("Błąd rejestracji: " + (data.message || "Spróbuj ponownie"));
+    async function fetchEntries(from, to){
+      const res = await fetch(`/api/calendar?from=${from}&to=${to}`);
+      return res.json();
     }
-  } catch (err) {
-    alert("Błąd: " + err);
-  }
-}
 
-async function zaloguj() {
-  const login = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  
-  if (!login || !password) {
-    alert("Proszę wpisać login i hasło!");
-    return;
-  }
-
-  try {
-    const res = await fetch(API_URL + '/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ login, password }),
-    });
-    const data = await res.json();
-    
-    if (res.ok) {
-      localStorage.setItem('token', data.token);
-      window.location.href = "strona.html";
-    } else {
-      alert("Błąd: nieprawidłowy login lub hasło");
+    async function saveEntry(date, option, hours){
+      await fetch('/api/calendar', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({entry_date:date, option:option, not_full_hours: hours})});
+      await render();
     }
-  } catch (err) {
-    alert("Błąd: " + err);
-  }
-}
-</script>
 
+    document.getElementById('rateForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const effective_date = document.getElementById('rateDate').value;
+      const whole_day = Number(document.getElementById('rateWhole').value);
+      const fuel = Number(document.getElementById('rateFuel').value);
+      await fetch('/api/rates', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({effective_date, whole_day, fuel})});
+      alert('Nowa stawka zapisana');
+      render();
+    });
+
+    function formatDateISO(d){
+      const y=d.getFullYear(); const m=('0'+(d.getMonth()+1)).slice(-2); const day=('0'+d.getDate()).slice(-2); return `${y}-${m}-${day}`;
+    }
+
+    async function render(){
+      const cal = document.getElementById('calendar');
+      cal.innerHTML='';
+      const start = startOfMonth(current);
+      const end = endOfMonth(current);
+      document.getElementById('monthLabel').textContent = start.toLocaleString('pl-PL',{month:'long', year:'numeric'});
+
+      // weekday headers
+      const days = ['PN','WT','ŚR','CZW','PT','SB','ND'];
+      for(const d of days){ const h=document.createElement('div'); h.style.fontWeight='bold'; h.style.textAlign='center'; h.textContent=d; cal.appendChild(h); }
+
+      // pad with blanks till first day (assuming week starts Monday)
+      const firstWeekday = (start.getDay()+6)%7; // 0..6 where 0=Mon
+      for(let i=0;i<firstWeekday;i++){ const b=document.createElement('div'); cal.appendChild(b); }
+
+      const from = formatDateISO(start);
+      const to = formatDateISO(end);
+      const data = await fetchEntries(from, to);
+      const entriesMap = {};
+      (data.entries || []).forEach(e=>{ entriesMap[e.entry_date]=e; });
+
+      for(let day=1; day<=end.getDate(); day++){
+        const d = new Date(current.getFullYear(), current.getMonth(), day);
+        const iso = formatDateISO(d);
+        const cell = document.createElement('div');
+        cell.className='menu-card';
+        cell.style.padding='8px';
+        const title = document.createElement('div'); title.style.fontWeight='bold'; title.textContent=day; cell.appendChild(title);
+
+        const select = document.createElement('select');
+        const opts = [{v:'',t:'-- brak --'},{v:'caly',t:'Cały dzień'},{v:'paliwo',t:'Paliwo'},{v:'nie_caly',t:'Nie cały - wpisz godziny'}];
+        opts.forEach(o=>{ const op=document.createElement('option'); op.value=o.v; op.textContent=o.t; select.appendChild(op); });
+        cell.appendChild(select);
+
+        const hoursInput = document.createElement('input'); hoursInput.type='number'; hoursInput.min='0'; hoursInput.placeholder='godziny (np.4)'; hoursInput.style.width='100%'; hoursInput.style.marginTop='6px';
+        cell.appendChild(hoursInput);
+
+        const saveBtn = document.createElement('button'); saveBtn.textContent='Zapisz'; saveBtn.className='btn btn-primary'; saveBtn.style.marginTop='6px'; cell.appendChild(saveBtn);
+
+        // populate if exists
+        if(entriesMap[iso]){
+          select.value = entriesMap[iso].option;
+          hoursInput.value = entriesMap[iso].not_full_hours || '';
+        }
+
+        saveBtn.addEventListener('click', ()=>{
+          const opt = select.value;
+          const hrs = hoursInput.value ? Number(hoursInput.value) : null;
+          if(!opt){ alert('Wybierz opcję'); return; }
+          saveEntry(iso, opt, hrs);
+        });
+
+        cal.appendChild(cell);
+      }
+
+      // update totals
+      document.getElementById('total').textContent = (data.total || 0).toFixed(2);
+      document.getElementById('totalFuel').textContent = (data.totalFuel || 0).toFixed(2);
+    }
+
+    render();
+  </script>
 </body>
 </html>

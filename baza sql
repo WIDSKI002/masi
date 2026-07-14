@@ -1,104 +1,77 @@
 
-CREATE TABLE uzytkownicy (
-    id SERIAL PRIMARY KEY,
-    imie VARCHAR(100) NOT NULL,
-    nazwisko VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE NOT NULL,
-    haslo VARCHAR(255) NOT NULL,
-    data_utworzenia TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Skrypt PostgreSQL: tworzy tabele potrzebne dla aplikacji kalendarza
+-- Wklej do klienta psql lub uruchom z pliku.
+
+-- (Opcjonalnie) utwórz bazę i połącz się z nią przed uruchomieniem:
+-- createdb masi_db
+-- psql -d masi_db -f "baza sql"
+
+BEGIN;
+
+-- Tabela stawek (rates): każda zmiana ma datę obowiązywania
+CREATE TABLE IF NOT EXISTS rates (
+	id SERIAL PRIMARY KEY,
+	effective_date DATE NOT NULL,
+	whole_day NUMERIC NOT NULL,
+	fuel NUMERIC NOT NULL,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rates_effective_date ON rates (effective_date);
 
-
-CREATE TABLE role (
-    id SERIAL PRIMARY KEY,
-    nazwa VARCHAR(50) UNIQUE NOT NULL
+-- Tabela zapisów kalendarza
+CREATE TABLE IF NOT EXISTS calendar_entries (
+	id SERIAL PRIMARY KEY,
+	entry_date DATE UNIQUE NOT NULL,
+	option VARCHAR(20) NOT NULL CHECK (option IN ('caly','paliwo','nie_caly')),
+	not_full_hours NUMERIC,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS idx_calendar_entry_date ON calendar_entries (entry_date);
 
-CREATE TABLE uzytkownik_role (
-    uzytkownik_id INT,
-    rola_id INT,
-    PRIMARY KEY (uzytkownik_id, rola_id),
-    FOREIGN KEY (uzytkownik_id) REFERENCES uzytkownicy(id) ON DELETE CASCADE,
-    FOREIGN KEY (rola_id) REFERENCES role(id) ON DELETE CASCADE
-);
+-- Jeśli nie ma jeszcze żadnej stawki, dodaj domyślną (250 / 50)
+DO $$
+BEGIN
+	IF (SELECT COUNT(*) FROM rates) = 0 THEN
+		INSERT INTO rates (effective_date, whole_day, fuel) VALUES ('1970-01-01', 250, 50);
+	END IF;
+END
+$$;
 
+-- Funkcja pomocnicza: oblicza cenę dla danego zapisu na podstawie obowiązującej stawki
+CREATE OR REPLACE FUNCTION calc_price(entry_date DATE, opt VARCHAR, hours NUMERIC)
+RETURNS NUMERIC AS $$
+DECLARE
+	r RECORD;
+	price NUMERIC := 0;
+BEGIN
+	SELECT * INTO r FROM rates WHERE effective_date <= entry_date ORDER BY effective_date DESC LIMIT 1;
+	IF r IS NULL THEN
+		RAISE EXCEPTION 'No applicable rate found for %', entry_date;
+	END IF;
+	IF opt = 'caly' THEN
+		price := r.whole_day;
+	ELSIF opt = 'paliwo' THEN
+		price := r.fuel;
+	ELSIF opt = 'nie_caly' THEN
+		-- Przyjęto dzień bazowy jako 8 godzin. Dostosuj jeśli potrzebne.
+		price := r.whole_day * COALESCE(hours,0) / 8.0;
+	ELSE
+		RAISE EXCEPTION 'Unknown option: %', opt;
+	END IF;
+	RETURN price;
+END;
+$$ LANGUAGE plpgsql STABLE;
 
-CREATE TABLE szkolenia (
-    id SERIAL PRIMARY KEY,
-    tytul VARCHAR(200) NOT NULL,
-    opis TEXT,
-    trener_id INT,
-    data_rozpoczecia DATE,
-    data_zakonczenia DATE,
-    limit_miejsc INT,
-    cena DECIMAL(10,2),
-    status VARCHAR(50),
-    FOREIGN KEY (trener_id) REFERENCES uzytkownicy(id) ON DELETE SET NULL
-);
+-- Widok łączący zapisy z wyliczoną ceną i datą obowiązującej stawki
+CREATE OR REPLACE VIEW calendar_with_price AS
+SELECT
+	c.*,
+	calc_price(c.entry_date, c.option, c.not_full_hours) AS price,
+	(SELECT effective_date FROM rates WHERE effective_date <= c.entry_date ORDER BY effective_date DESC LIMIT 1) AS rate_effective_date
+FROM calendar_entries c;
 
+COMMIT;
 
-CREATE TABLE zapisy (
-    id SERIAL PRIMARY KEY,
-    uzytkownik_id INT NOT NULL,
-    szkolenie_id INT NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    data_zapisu TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (uzytkownik_id) REFERENCES uzytkownicy(id) ON DELETE CASCADE,
-    FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
-);
-
-
-
-CREATE TABLE platnosci (
-    id SERIAL PRIMARY KEY,
-    zapis_id INT NOT NULL,
-    kwota DECIMAL(10,2),
-    status VARCHAR(50),
-    data_platnosci TIMESTAMP,
-    FOREIGN KEY (zapis_id) REFERENCES zapisy(id) ON DELETE CASCADE
-);
-
-
-
-CREATE TABLE obecnosci (
-    id SERIAL PRIMARY KEY,
-    uzytkownik_id INT NOT NULL,
-    termin_id INT NOT NULL,
-    obecny BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (uzytkownik_id) REFERENCES uzytkownicy(id) ON DELETE CASCADE,
-    FOREIGN KEY (termin_id) REFERENCES terminy_szkolen(id) ON DELETE CASCADE
-);
-
-
-CREATE TABLE certyfikaty (
-    id SERIAL PRIMARY KEY,
-    uzytkownik_id INT NOT NULL,
-    szkolenie_id INT NOT NULL,
-    data_wydania DATE,
-    FOREIGN KEY (uzytkownik_id) REFERENCES uzytkownicy(id) ON DELETE CASCADE,
-    FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
-);
-
-
-CREATE TABLE powiadomienia (
-    id SERIAL PRIMARY KEY,
-    uzytkownik_id INT,
-    tresc TEXT,
-    typ VARCHAR(50),
-    data_wyslania TIMESTAMP,
-    FOREIGN KEY (uzytkownik_id) REFERENCES uzytkownicy(id) ON DELETE CASCADE
-);
-
-
-
-INSERT INTO role (nazwa) VALUES
-('Administrator'),
-('Uczestnik'),
-('Trener');
-
-CREATE TABLE terminy_szkolen (
-    id SERIAL PRIMARY KEY,
-    szkolenie_id INT NOT NULL,
-    termin TIMESTAMP NOT NULL,
-    FOREIGN KEY (szkolenie_id) REFERENCES szkolenia(id) ON DELETE CASCADE
-);
+-- Przykładowe zapytania (odkomentuj, jeśli chcesz zobaczyć dane):
+-- SELECT * FROM rates ORDER BY effective_date;
+-- SELECT * FROM calendar_with_price ORDER BY entry_date;
